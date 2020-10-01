@@ -1,4 +1,4 @@
-type t = (* MinCaml¤Î·¿¤òÉ½¸½¤¹¤ë¥Ç¡¼¥¿·¿ (caml2html: type_t) *)
+type t = (* MinCamlÂ¤ÃŽÂ·Â¿Â¤Ã²Ã‰Â½Â¸Â½Â¤Â¹Â¤Ã«Â¥Ã‡Â¡Â¼Â¥Â¿Â·Â¿ (caml2html: type_t) *)
   | Unit
   | Bool
   | Int
@@ -8,4 +8,21 @@ type t = (* MinCaml¤Î·¿¤òÉ½¸½¤¹¤ë¥Ç¡¼¥¿·¿ (caml2html: type_t) *)
   | Array of t
   | Var of t option ref
 
-let gentyp () = Var(ref None) (* ¿·¤·¤¤·¿ÊÑ¿ô¤òºî¤ë *)
+let gentyp () = Var(ref None) (* Â¿Â·Â¤Â·Â¤Â¤Â·Â¿ÃŠÃ‘Â¿Ã´Â¤Ã²ÂºÃ®Â¤Ã« *)
+
+let rec str = function
+  | Unit -> "()"
+  | Bool -> "Bool"
+  | Int -> "Int"
+  | Float -> "Float"
+  | Fun(args, body) ->
+    "Fun(" ^
+    (List.fold_left (fun cur_s arg -> cur_s ^ ", " ^ (str arg)) "" args) ^
+    ") -> " ^ (str body)
+  | Tuple li -> "(" ^ (List.fold_left (fun cur_s arg -> cur_s ^ ", " ^ (str arg)) "" li) ^ ")"
+  | Array arr -> Printf.sprintf "[%s]" (str arr)
+  | Var v -> (
+      match !v with
+      | Some v -> Printf.sprintf "Var(%s)" (str v)
+      | None -> Printf.sprintf "()"
+    )

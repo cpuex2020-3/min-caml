@@ -1,15 +1,17 @@
 let limit = ref 1000
 
-let rec iter n e = (* ºÇÅ¬²½½èÍý¤ò¤¯¤ê¤«¤¨¤¹ (caml2html: main_iter) *)
+let rec iter n e = (* ÂºÃ‡Ã…Â¬Â²Â½Â½Ã¨ÃÃ½Â¤Ã²Â¤Â¯Â¤ÃªÂ¤Â«Â¤Â¨Â¤Â¹ (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
-  if e = e' then e else
-  iter (n - 1) e'
+    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
+    if e = e' then e else
+      iter (n - 1) e'
 
-let lexbuf outchan l = (* ¥Ð¥Ã¥Õ¥¡¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Á¥ã¥ó¥Í¥ë¤Ø½ÐÎÏ¤¹¤ë (caml2html: main_lexbuf) *)
+let lexbuf outchan l = (* Â¥ÃÂ¥ÃƒÂ¥Ã•Â¥Â¡Â¤Ã²Â¥Â³Â¥Ã³Â¥Ã‘Â¥Â¤Â¥Ã«Â¤Â·Â¤Ã†Â¥ÃÂ¥Ã£Â¥Ã³Â¥ÃÂ¥Ã«Â¤Ã˜Â½ÃÃŽÃÂ¤Â¹Â¤Ã« (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
+  let syntax = Parser.exp Lexer.token l in
+  Syntax.print syntax 0;
   Emit.f outchan
     (RegAlloc.f
        (Simm.f
@@ -18,12 +20,11 @@ let lexbuf outchan l = (* ¥Ð¥Ã¥Õ¥¡¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Á¥ã¥ó¥Í¥ë¤Ø½ÐÎÏ¤¹¤ë (caml2htm
                 (iter !limit
                    (Alpha.f
                       (KNormal.f
-                         (Typing.f
-                            (Parser.exp Lexer.token l)))))))))
+                         (Typing.f syntax))))))))
 
-let string s = lexbuf stdout (Lexing.from_string s) (* Ê¸»úÎó¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤ÆÉ¸½à½ÐÎÏ¤ËÉ½¼¨¤¹¤ë (caml2html: main_string) *)
+let string s = lexbuf stdout (Lexing.from_string s) (* ÃŠÂ¸Â»ÃºÃŽÃ³Â¤Ã²Â¥Â³Â¥Ã³Â¥Ã‘Â¥Â¤Â¥Ã«Â¤Â·Â¤Ã†Ã‰Â¸Â½Ã Â½ÃÃŽÃÂ¤Ã‹Ã‰Â½Â¼Â¨Â¤Â¹Â¤Ã« (caml2html: main_string) *)
 
-let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file) *)
+let file f = (* Â¥Ã•Â¥Â¡Â¥Â¤Â¥Ã«Â¤Ã²Â¥Â³Â¥Ã³Â¥Ã‘Â¥Â¤Â¥Ã«Â¤Â·Â¤Ã†Â¥Ã•Â¥Â¡Â¥Â¤Â¥Ã«Â¤Ã‹Â½ÃÃŽÃÂ¤Â¹Â¤Ã« (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
   let outchan = open_out (f ^ ".s") in
   try
@@ -32,7 +33,7 @@ let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file
     close_out outchan;
   with e -> (close_in inchan; close_out outchan; raise e)
 
-let () = (* ¤³¤³¤«¤é¥³¥ó¥Ñ¥¤¥é¤Î¼Â¹Ô¤¬³«»Ï¤µ¤ì¤ë (caml2html: main_entry) *)
+let () = (* Â¤Â³Â¤Â³Â¤Â«Â¤Ã©Â¥Â³Â¥Ã³Â¥Ã‘Â¥Â¤Â¥Ã©Â¤ÃŽÂ¼Ã‚Â¹Ã”Â¤Â¬Â³Â«Â»ÃÂ¤ÂµÂ¤Ã¬Â¤Ã« (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
