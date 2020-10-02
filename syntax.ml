@@ -104,7 +104,7 @@ let rec print t depth =
       print_newline();
     ) (* TODO: print type as well *)
   | Var id -> Printf.printf "VAR %s" id
-  | LetRec (f, t) -> (
+  | LetRec (f, ty) -> (
       let (id, t) = f.name in
       let args = f.args in
       let body = f.body in
@@ -117,6 +117,8 @@ let rec print t depth =
       print_n_tabs (depth + 1);
       Printf.printf "BODY\n";
       print body (depth + 1);
+      print_newline();
+      print ty (depth + 1);
     )
   | App (f, args) -> (
       Printf.printf "APP\n";

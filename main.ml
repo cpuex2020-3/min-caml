@@ -11,7 +11,11 @@ let lexbuf outchan l = (* ¥Ð¥Ã¥Õ¥¡¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Á¥
   Id.counter := 0;
   Typing.extenv := M.empty;
   let syntax = Parser.exp Lexer.token l in
+  print_string "** Output of Syntax.t **\n";
   Syntax.print syntax 0;
+  let kNormal = KNormal.f (Typing.f syntax) in
+  print_string "\n** Output of KNormal.t **\n";
+  KNormal.print kNormal 0;
   Emit.f outchan
     (RegAlloc.f
        (Simm.f
@@ -19,8 +23,7 @@ let lexbuf outchan l = (* ¥Ð¥Ã¥Õ¥¡¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Á¥
              (Closure.f
                 (iter !limit
                    (Alpha.f
-                      (KNormal.f
-                         (Typing.f syntax))))))))
+                      kNormal))))))
 
 let string s = lexbuf stdout (Lexing.from_string s) (* Ê¸»úÎó¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤ÆÉ¸½à½ÐÎÏ¤ËÉ½¼¨¤¹¤ë (caml2html: main_string) *)
 
