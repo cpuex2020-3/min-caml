@@ -133,8 +133,8 @@ exp:
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { Array($2, $3) }
-| error
-    { failwith
+| error {
+    failwith
         (
             let start_pos = Parsing.symbol_start_pos() in
             let end_pos = Parsing.symbol_end_pos() in
@@ -143,7 +143,8 @@ exp:
             (start_pos.pos_cnum - start_pos.pos_bol)
             end_pos.pos_lnum
             (end_pos.pos_cnum - end_pos.pos_bol)
-           ) }
+           )
+        }
 
 fundef:
 | IDENT formal_args EQUAL exp

@@ -28,7 +28,10 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec print_n_tabs n =
   if n = 0 then ()
-  else (Printf.printf " "; print_n_tabs (n-1))
+  else (
+    Printf.printf " ";
+    print_n_tabs (n-1)
+  )
 
 let rec print t depth =
   print_n_tabs depth;
@@ -37,8 +40,14 @@ let rec print t depth =
   | Bool t -> Printf.printf "BOOL %B" t
   | Int t -> Printf.printf "INT %d" t
   | Float t -> Printf.printf "FLOAT %f" t
-  | Not t -> (Printf.printf "NOT "; print t depth)
-  | Neg t -> (Printf.printf "NEG "; print t depth)
+  | Not t -> (
+      Printf.printf "NOT ";
+      print t depth
+    )
+  | Neg t -> (
+      Printf.printf "NEG ";
+      print t depth
+    )
   | Add (t1, t2) -> (
       Printf.printf "ADD\n";
       print t1 (depth + 1);
@@ -53,7 +62,11 @@ let rec print t depth =
       print t2 (depth + 1);
       print_newline();
     )
-  | FNeg t -> (Printf.printf "FNEG\n"; print t depth; print_newline())
+  | FNeg t -> (
+      Printf.printf "FNEG\n";
+      print t depth;
+      print_newline()
+    )
   | FAdd (t1, t2) -> (
       Printf.printf "FADD\n";
       print t1 (depth + 1);
@@ -82,8 +95,20 @@ let rec print t depth =
       print t2 (depth + 1);
       print_newline();
     )
-  | Eq (t1, t2) -> (Printf.printf "EQ\n"; print_n_tabs (depth + 1); print t1 depth; print t2 depth; print_newline())
-  | LE (t1, t2) -> (Printf.printf "LE\n"; print_n_tabs (depth + 1); print t1 depth; print t2 depth; print_newline())
+  | Eq (t1, t2) -> (
+      Printf.printf "EQ\n";
+      print_n_tabs (depth + 1);
+      print t1 depth;
+      print t2 depth;
+      print_newline()
+    )
+  | LE (t1, t2) -> (
+      Printf.printf "LE\n";
+      print_n_tabs (depth + 1);
+      print t1 depth;
+      print t2 depth;
+      print_newline()
+    )
   | If (cond, thn, els) -> (
       Printf.printf "IF\n";
       print cond (depth + 1);
@@ -97,7 +122,7 @@ let rec print t depth =
       print els (depth + 1);
     )
   | Let ((id, ty), t1, t2) -> (
-      Printf.printf "LET %s\n" id;
+      Printf.printf "LET %s TYPE %s\n" id (Type.str ty);
       print t1 depth;
       print_newline();
       print t2 depth;
@@ -136,7 +161,12 @@ let rec print t depth =
       Printf.printf ")\n";
     )
   | LetTuple (vars, t1 , t2) -> (
-      List.iter (fun arg -> (let (id, ty) = arg in Printf.printf "ID %s, TYPE %s" id (Type.str ty))) vars;
+      List.iter (
+        fun arg -> (
+            let (id, ty) = arg in
+            Printf.printf "ID %s, TYPE %s" id (Type.str ty)
+          )
+      ) vars;
       print t1 (depth + 1);
       print t2 (depth + 1);
     )
