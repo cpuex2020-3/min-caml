@@ -1,10 +1,8 @@
 %{
-(* parserが利用する変数、関数、型などの定義 *)
 open Syntax
 let addtyp x = (x, Type.gentyp ())
 %}
 
-/* (* 字句を表すデータ型の定義 (caml2html: parser_token) *) */
 %token <bool> BOOL
 %token <int> INT
 %token <float> FLOAT
@@ -36,8 +34,8 @@ let addtyp x = (x, Type.gentyp ())
 %token LPAREN
 %token RPAREN
 %token EOF
+%token NEW_LINE
 
-/* (* 優先順位とassociativityの定義（低い方から高い方へ） (caml2html: parser_prior) *) */
 %nonassoc IN
 %right prec_let
 %right SEMICOLON
@@ -52,13 +50,12 @@ let addtyp x = (x, Type.gentyp ())
 %left prec_app
 %left DOT
 
-/* (* 開始記号の定義 *) */
 %type <Syntax.t> exp
 %start exp
 
 %%
 
-simple_exp: /* (* 括弧をつけなくても関数の引数になれる式 (caml2html: parser_simple) *) */
+simple_exp:
 | LPAREN exp RPAREN
     { $2 }
 | LPAREN RPAREN
@@ -74,7 +71,7 @@ simple_exp: /* (* 括弧をつけなくても関数の引数になれる式 (caml2html: parser_simp
 | simple_exp DOT LPAREN exp RPAREN
     { Get($1, $4) }
 
-exp: /* (* 一般の式 (caml2html: parser_exp) *) */
+exp:
 | simple_exp
     { $1 }
 | NOT exp
@@ -83,9 +80,9 @@ exp: /* (* 一般の式 (caml2html: parser_exp) *) */
 | MINUS exp
     %prec prec_unary_minus
     { match $2 with
-    | Float(f) -> Float(-.f) (* -1.23などは型エラーではないので別扱い *)
+    | Float(f) -> Float(-.f)
     | e -> Neg(e) }
-| exp PLUS exp /* (* 足し算を構文解析するルール (caml2html: parser_add) *) */
+| exp PLUS exp
     { Add($1, $3) }
 | exp MINUS exp
     { Sub($1, $3) }
@@ -138,9 +135,15 @@ exp: /* (* 一般の式 (caml2html: parser_exp) *) */
     { Array($2, $3) }
 | error
     { failwith
-        (Printf.sprintf "parse error near characters %d-%d"
-           (Parsing.symbol_start ())
-           (Parsing.symbol_end ())) }
+        (
+            let start_pos = Parsing.symbol_start_pos() in
+            let end_pos = Parsing.symbol_end_pos() in
+            Printf.sprintf "parse error near characters l%d %d - l%d %d"
+            start_pos.pos_lnum
+            (start_pos.pos_cnum - start_pos.pos_bol)
+            end_pos.pos_lnum
+            (end_pos.pos_cnum - end_pos.pos_bol)
+           ) }
 
 fundef:
 | IDENT formal_args EQUAL exp
