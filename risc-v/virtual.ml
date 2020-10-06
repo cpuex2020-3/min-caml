@@ -2,7 +2,7 @@
 
 open Asm
 
-let data = ref [] (* ÉâÆ°¾®¿ôÅÀ¿ô¤ÎÄê¿ô¥Æ¡¼¥Ö¥ë (caml2html: virtual_data) *)
+let data = ref []
 
 let classify xts ini addf addi =
   List.fold_left
@@ -31,7 +31,7 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t ->
        (offset + 4, addi x t offset acc))
 
-let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g) *)
+let rec g env = function
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Set(i))
   (*
@@ -39,7 +39,6 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (ca
    *let l =
    *try
    *)
-  (* ¤¹¤Ç¤ËÄê¿ô¥Æ¡¼¥Ö¥ë¤Ë¤¢¤Ã¤¿¤éºÆÍøÍÑ *)
     (*
      *    let (l, _) = List.find (fun (_, d') -> d = d') !data in
      *    l
@@ -77,8 +76,7 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (ca
      | Type.Unit -> Ans(Nop)
      (*| Type.Float -> Ans(FMovD(x))*)
      | _ -> Ans(Mov(x)))
-  (*| Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (* ¥¯¥í¡¼¥¸¥ã¤ÎÀ¸À® (caml2html: virtual_makecls) *)*)
-  (* Closure¤Î¥¢¥É¥ì¥¹¤ò¥»¥Ã¥È¤·¤Æ¤«¤é¡¢¼«Í³ÊÑ¿ô¤ÎÃÍ¤ò¥¹¥È¥¢ *)
+  (*| Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (*(caml2html: virtual_makecls) *)*)
   (*let e2' = g (M.add x t env) e2 in*)
   (*let offset, store_fv =*)
   (*expand*)
@@ -122,7 +120,7 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (ca
   (*if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)*)
   (*Let((x, t), Ld(y, C(offset), 1), load)) in*)
   (*load*)
-  | Closure.Get(x, y) -> (* ÇÛÎó¤ÎÆÉ¤ß½Ð¤· (caml2html: virtual_get) *)
+  | Closure.Get(x, y) ->
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
      (*| Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 8))*)
@@ -134,9 +132,9 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (ca
      (*| Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))*)
      | Type.Array(_) -> Ans(St(z, x, V(y), 4))
      | _ -> assert false)
+  | _ -> raise (Failure "Unhandled!")
 (*| Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))*)
 
-(* ´Ø¿ô¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_h) *)
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =
   let (int, float) = separate yts in
   let (offset, load) =
@@ -150,7 +148,6 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
     { name = Id.L(x); args = int; fargs = float; body = load; ret = t2 }
   | _ -> assert false
 
-(* ¥×¥í¥°¥é¥àÁ´ÂÎ¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_f) *)
 let f (Closure.Prog(fundefs, e)) =
   data := [];
   let fundefs = List.map h fundefs in

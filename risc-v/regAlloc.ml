@@ -174,10 +174,10 @@ and g' dest cont regenv = function (* ³ÆÌ¿Îá¤Î¥ì¥¸¥¹¥¿³ä¤êÅ
     else
       g'_call dest cont regenv exp (fun ys zs -> CallDir(Id.L(x), ys, zs)) ys zs
   | Save(x, y) -> assert false
-and g'_if dest cont regenv exp constr e1 e2 = (* if¤Î¥ì¥¸¥¹¥¿³ä¤êÅö¤Æ (caml2html: regalloc_if) *)
+and g'_if dest cont regenv exp constr e1 e2 =
   let (e1', regenv1) = g dest cont regenv e1 in
   let (e2', regenv2) = g dest cont regenv e2 in
-  let regenv' = (* Î¾Êý¤Ë¶¦ÄÌ¤Î¥ì¥¸¥¹¥¿ÊÑ¿ô¤À¤±ÍøÍÑ *)
+  let regenv' =
     List.fold_left
       (fun regenv' x ->
          try
@@ -192,11 +192,11 @@ and g'_if dest cont regenv exp constr e1 e2 = (* if¤Î¥ì¥¸¥¹¥¿³ä¤ê�
   (List.fold_left
      (fun e x ->
         if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then e else
-          seq(Save(M.find x regenv, x), e)) (* ¤½¤¦¤Ç¤Ê¤¤ÊÑ¿ô¤ÏÊ¬´ôÄ¾Á°¤Ë¥»¡¼¥Ö *)
+          seq(Save(M.find x regenv, x), e))
      (Ans(constr e1' e2'))
      (fv cont),
    regenv')
-and g'_call dest cont regenv exp constr ys zs = (* ´Ø¿ô¸Æ¤Ó½Ð¤·¤Î¥ì¥¸¥¹¥¿³ä¤êÅö¤Æ (caml2html: regalloc_call) *)
+and g'_call dest cont regenv exp constr ys zs =
   (List.fold_left
      (fun e x ->
         if x = fst dest || not (M.mem x regenv) then e else
@@ -207,7 +207,7 @@ and g'_call dest cont regenv exp constr ys zs = (* ´Ø¿ô¸Æ¤Ó½Ð¤·¤Î�
      (fv cont),
    M.empty)
 
-let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* ´Ø¿ô¤Î¥ì¥¸¥¹¥¿³ä¤êÅö¤Æ (caml2html: regalloc_h) *)
+let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } =
   if List.length ys > Array.length regs || List.length zs > Array.length fregs then
     Format.eprintf "too many arguments for function %s@." x;
   let regenv = M.add x reg_cl M.empty in
@@ -239,7 +239,7 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* ´Ø¿ô
   let (e', regenv') = g (a, t) (Ans(Mov(a))) regenv e in
   { name = Id.L(x); args = arg_regs; fargs = farg_regs; body = e'; ret = t }
 
-let f (Prog(data, fundefs, e)) = (* ¥×¥í¥°¥é¥àÁ´ÂÎ¤Î¥ì¥¸¥¹¥¿³ä¤êÅö¤Æ (caml2html: regalloc_f) *)
+let f (Prog(data, fundefs, e)) =
   Format.eprintf "register allocation: may take some time (up to a few minutes, depending on the size of functions)@.";
   let fundefs' = List.map h fundefs in
   let e', regenv' = g (Id.gentmp Type.Unit, Type.Unit) (Ans(Nop)) M.empty e in

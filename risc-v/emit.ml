@@ -33,11 +33,13 @@ let rec shuffle sw xys =
   match List.partition (fun (_, y) -> List.mem_assoc y xys) xys with
   | [], [] -> []
   | (x, y) :: xys, [] ->
-    (y, sw) :: (x, y) :: shuffle sw (List.map
-                                       (function
-                                         | (y', z) when y = y' -> (sw, z)
-                                         | yz -> yz)
-                                       xys)
+    (y, sw) :: (x, y) :: shuffle sw (
+      List.map (
+        function
+        | (y', z) when y = y' -> (sw, z)
+        | yz -> yz
+      )
+        xys)
   | xys, acyc -> acyc @ shuffle sw xys
 
 type dest = Tail | NonTail of Id.t
@@ -57,7 +59,7 @@ and g' oc = function
     if V(x) = z' then
       Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
     else
-      Printf.fprintf oc "\taddi\t%s %s, %s\n" x y (pp_id_or_imm z')
+      Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (pp_id_or_imm z')
   | NonTail(x), Sub(_, y, z') ->
     Printf.fprintf oc "\taddi\t%s, %s, -%s\n" x y (pp_id_or_imm z')
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
@@ -73,16 +75,16 @@ and g' oc = function
     Printf.fprintf oc "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
-    Printf.fprintf oc "\tjr ra\n";
+    Printf.fprintf oc "\tret\n";
   | Tail, (Set _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
-    Printf.fprintf oc "\tjr ra\n";
+    Printf.fprintf oc "\tret\n";
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' oc (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
-    Printf.fprintf oc "\tjr ra\n";
+    Printf.fprintf oc "\tret\n";
   | Tail, IfEq(x, y, e1, e2) ->
     g'_tail_if oc x y e1 e2 "be" "bne"
   | Tail, IfLE(x, y, e1, e2) ->
@@ -110,13 +112,16 @@ and g' oc = function
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in
-    if ss > 0 then Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-    Printf.fprintf oc "\tcall\t%s\n" x;
-    if ss > 0 then Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
+    Printf.fprintf oc "\tsw\tra, %d(%s)\n" ss reg_sp;
+    Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 8);
+    Printf.fprintf oc "\tjal\t%s\n" x;
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 8);
+    Printf.fprintf oc "\tlw\tra, %d(%s)\n" ss reg_sp;
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
+  | _ -> raise (Failure "Unhandled!")
 and g'_tail_if oc x y e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
@@ -178,10 +183,13 @@ let f oc (Prog(data, fundefs, e)) =
     data;
   Printf.fprintf oc ".text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
-  Printf.fprintf oc ".globl\tmin_caml_start\n";
-  Printf.fprintf oc "min_caml_start:\n";
-  Printf.fprintf oc ".globl\t_min_caml_start\n";
-  Printf.fprintf oc "_min_caml_start: # for cygwin\n";
+  (*TODO: set dummy min_caml_print_int for now*)
+  Printf.fprintf oc "min_caml_print_int:\n";
+  Printf.fprintf oc "\tmv\ta0, a2\n";
+  Printf.fprintf oc "\tret\n";
+  (*Originally it was min_caml_start (see the original implementation), but now it's main*)
+  Printf.fprintf oc ".globl\tmain\n";
+  Printf.fprintf oc "main:\n";
   Printf.fprintf oc "\taddi\tsp, sp, -16\n";
   Printf.fprintf oc "\tsw\tra, 8(sp)\n";
   Printf.fprintf oc "\tsw\ts0, 0(sp)\n";
@@ -192,4 +200,4 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlw\tra, 8(sp)\n";
   Printf.fprintf oc "\tlw\ts0, 0(sp)\n";
   Printf.fprintf oc "\taddi\tsp, sp, 16\n";
-  Printf.fprintf oc "\tjr\tra\n";
+  Printf.fprintf oc "\tret\n";
