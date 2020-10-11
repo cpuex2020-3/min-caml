@@ -2,8 +2,12 @@ let limit = ref 1000
 
 let rec iter n e =
   Format.eprintf "iteration %d@." n;
-  if n = 0 then e else
-    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
+  if n = 0 then e
+  else
+    let cse = Cse.f e in
+    print_string "** After cse **\n";
+    KNormal.print cse 0;
+    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f cse)))) in
     if e = e' then e else
       iter (n - 1) e'
 

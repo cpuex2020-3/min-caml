@@ -1,5 +1,5 @@
-type t = string (* 変数の名前 (caml2html: id_t) *)
-type l = L of string (* トップレベル関数やグローバル配列のラベル (caml2html: id_l) *)
+type t = string
+type l = L of string
 
 let rec pp_list = function
   | [] -> ""
@@ -18,7 +18,7 @@ let rec id_of_typ = function
   | Type.Float -> "d"
   | Type.Fun _ -> "f"
   | Type.Tuple _ -> "t"
-  | Type.Array _ -> "a" 
+  | Type.Array _ -> "a"
   | Type.Var _ -> assert false
 let gentmp typ =
   incr counter;
