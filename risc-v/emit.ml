@@ -113,9 +113,9 @@ and g' oc = function
     g'_args oc [] ys zs;
     let ss = stacksize () in
     Printf.fprintf oc "\tsw\tra, %d(%s)\n" ss reg_sp;
-    Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 8);
+    Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 8 * 2);
     Printf.fprintf oc "\tjal\t%s\n" x;
-    Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 8);
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 8 * 2);
     Printf.fprintf oc "\tlw\tra, %d(%s)\n" ss reg_sp;
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
@@ -183,21 +183,9 @@ let f oc (Prog(data, fundefs, e)) =
     data;
   Printf.fprintf oc ".text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
-  (*TODO: set dummy min_caml_print_int for now*)
-  Printf.fprintf oc "min_caml_print_int:\n";
-  Printf.fprintf oc "\tmv\ta0, a2\n";
-  Printf.fprintf oc "\tret\n";
-  (*Originally it was min_caml_start (see the original implementation), but now it's main*)
-  Printf.fprintf oc ".globl\tmain\n";
-  Printf.fprintf oc "main:\n";
-  Printf.fprintf oc "\taddi\tsp, sp, -16\n";
-  Printf.fprintf oc "\tsw\tra, 8(sp)\n";
-  Printf.fprintf oc "\tsw\ts0, 0(sp)\n";
-  Printf.fprintf oc "\taddi\ts0, sp, 16\n";
+  Printf.fprintf oc ".globl\tmin_caml_start\n";
+  Printf.fprintf oc "min_caml_start:\n";
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(regs.(0)), e);
-  Printf.fprintf oc "\tlw\tra, 8(sp)\n";
-  Printf.fprintf oc "\tlw\ts0, 0(sp)\n";
-  Printf.fprintf oc "\taddi\tsp, sp, 16\n";
   Printf.fprintf oc "\tret\n";

@@ -1,5 +1,5 @@
 type id_or_imm = V of Id.t | C of int
-type t = (* Ì¿Îá¤ÎÎó (caml2html: sparcasm_t) *)
+type t =
   | Ans of exp
   | Let of (Id.t * Type.t) * exp * t
 and exp =
@@ -28,7 +28,7 @@ let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
 let regs = (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
-  [| "a2"; "a3"; "a4"; "a5"; "a6"; "a7" |]
+  [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7" |]
 let fregs = Array.init 6 (fun i -> Printf.sprintf "fa%d" (i+1))
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
