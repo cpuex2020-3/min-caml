@@ -2,3 +2,12 @@ tmp*
 *swp
 *swo
 *~
+*.s
+
+# files generated from soft link
+asm.ml*
+emit.ml
+regAlloc.ml
+simm.ml
+Makefile
+virtual.ml

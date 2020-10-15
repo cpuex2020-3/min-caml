@@ -7,8 +7,8 @@ CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS=-warn-error -31
 
-# default: debug-code top $(RESULT) do_test
-default: debug-code top $(RESULT)
+default: debug-code top $(RESULT) do_test
+# default: debug-code top $(RESULT)
 $(RESULT): debug-code top
 clean:: nobackup
 
