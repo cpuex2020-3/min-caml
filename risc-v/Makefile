@@ -6,7 +6,7 @@ CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS=-warn-error -31
 
-default: debug-code top $(RESULT) sub_test
+default: debug-code top $(RESULT)
 $(RESULT): debug-code top
 clean:: nobackup
 
@@ -26,10 +26,10 @@ join-reg join-reg2 non-tail-if non-tail-if2 \
 inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs
 
-SOME_TESTS = fib
+SUB_TESTS = fib
 
-sub_test: $(SOME_TESTS:%=test/%.cmp) # test for already implemented codes
-all_test: $(TESTS:%=test/%.cmp)
+sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
+all_tests: $(TESTS:%=test/%.cmp)
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
