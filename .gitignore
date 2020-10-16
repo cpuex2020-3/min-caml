@@ -4,10 +4,6 @@ tmp*
 *~
 *.s
 
-# files generated from soft link
-asm.ml*
-emit.ml
-regAlloc.ml
-simm.ml
-Makefile
-virtual.ml
+# point ignorance
+test/manyargs.ml
+test/toomanyargs.ml
