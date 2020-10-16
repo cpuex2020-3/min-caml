@@ -24,9 +24,10 @@ adder funcomp cls-rec cls-bug cls-bug2 cls-reg-bug \
 shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
 join-reg join-reg2 non-tail-if non-tail-if2 \
 inprod inprod-rec inprod-loop matmul matmul-flat \
-manyargs
+manyargs \
+sub
 
-SUB_TESTS = fib
+SUB_TESTS = fib gcd sub
 
 sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
 all_tests: $(TESTS:%=test/%.cmp)

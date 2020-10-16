@@ -51,7 +51,7 @@ let rec g env = function
      *)
   | Closure.Neg(x) -> Ans(Neg(x))
   | Closure.Add(x, y) -> Ans(Add(x, x, V(y))) (* TODO: destination op is the same as the lhs for now *)
-  | Closure.Sub(x, y) -> Ans(Sub(x, x, V(y))) (* TODO: destination op is the same as the lhs for now *)
+  | Closure.Sub(x, y) -> Ans(Sub(x, x, y)) (* TODO: destination op is the same as the lhs for now *)
   (*| Closure.FNeg(x) -> Ans(FNegD(x))*)
   (*| Closure.FAdd(x, y) -> Ans(FAddD(x, y))*)
   (*| Closure.FSub(x, y) -> Ans(FSubD(x, y))*)

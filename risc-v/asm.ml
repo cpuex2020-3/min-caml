@@ -8,7 +8,7 @@ and exp =
   | Mov of Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t * id_or_imm
-  | Sub of Id.t * Id.t * id_or_imm
+  | Sub of Id.t * Id.t * Id.t
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
   | LdDF of Id.t * id_or_imm * int
@@ -56,7 +56,8 @@ let rec fv_exp = function
   (*| SetL(_) | Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
   (*| FMovD(x) | FNegD(x) | Save(x, _) -> [x]*)
-  | Add(x, y', z) | Sub(x, y', z) -> x :: y' :: fv_id_or_imm z
+  | Add(x, y', z) -> x :: y' :: fv_id_or_imm z
+  | Sub(x, y, z) -> x :: y :: [z]
   | Ld(x, y', _) -> x :: fv_id_or_imm y'
   | LdDF(x, y', _) -> x :: fv_id_or_imm y'
   | St(x, y, z', _) -> x :: y :: fv_id_or_imm z'

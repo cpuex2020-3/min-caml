@@ -145,7 +145,7 @@ and g' dest cont regenv = function (* ³ÆÌ¿Îá¤Î¥ì¥¸¥¹¥¿³ä¤êÅ
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
   | Add(x, y', z) -> (Ans(Add(find x Type.Int regenv, find y' Type.Int regenv, find' z regenv)), regenv)
-  | Sub(x, y', z) -> (Ans(Sub(find x Type.Int regenv, find y' Type.Int regenv, find' z regenv)), regenv)
+  | Sub(x, y', z) -> (Ans(Sub(find x Type.Int regenv, find y' Type.Int regenv, find z Type.Int regenv)), regenv)
   | Ld(x, y', i) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, i)), regenv)
   | St(x, y, z', i) -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv, i)), regenv)
   (*| FMovD(x) -> (Ans(FMovD(find x Type.Float regenv)), regenv)*)

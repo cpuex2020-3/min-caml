@@ -9,7 +9,7 @@ and exp =
   | Mov of Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t * id_or_imm
-  | Sub of Id.t * Id.t * id_or_imm
+  | Sub of Id.t * Id.t * Id.t
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
   (*| FMovD of Id.t*)

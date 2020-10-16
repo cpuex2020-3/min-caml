@@ -50,18 +50,16 @@ let rec g oc = function
     g oc (dest, e)
 and g' oc = function
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\taddi\t%s, zero, %d\n" x i
+  (*| NonTail(x), Set(i) -> Printf.fprintf oc "\taddi\t%s, zero, %d\n" x i TODO: handle large numbers*)
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
   | NonTail(x), Mov(y) -> if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
     Printf.fprintf oc "\tmul\t%s,%s,-1\n" x x
   | NonTail(x), Add(_, y, z') ->
-    if V(x) = z' then
-      Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
-    else
-      Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (pp_id_or_imm z')
-  | NonTail(x), Sub(_, y, z') ->
-    Printf.fprintf oc "\taddi\t%s, %s, -%s\n" x y (pp_id_or_imm z')
+    if V(x) = z' then Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
+    else Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (pp_id_or_imm z')
+  | NonTail(x), Sub(_, y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
@@ -154,7 +152,12 @@ and g'_args oc x_reg_cl ys zs =
       (0, x_reg_cl)
       ys in
   List.iter
-    (fun (y, r) -> Printf.fprintf oc "\tmv\t%s, %s\n" r y)
+    (fun (y, r) -> (
+         (* TODO: understand how it works *)
+         if String.contains r '(' then Printf.fprintf oc "\tsw\t%s, %s\n" y r
+         else if String.contains y '(' then Printf.fprintf oc "\tlw\t%s, %s\n" r y
+         else Printf.fprintf oc "\tmv\t%s, %s\n" r y
+       ))
     (shuffle sw yrs);
   let (d, zfrs) =
     List.fold_left
