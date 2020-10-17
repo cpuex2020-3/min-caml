@@ -38,10 +38,9 @@ let reg_sw = regs.(Array.length regs - 1) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 *)
 let reg_sp = "sp" (* stack pointer *)
-let reg_hp = "min_caml_hp" (* heap pointer (caml2html: sparcasm_reghp) *)
 let reg_ra = "ra" (* return address *)
 (*TODO: is is_reg*)
-let is_reg x = List.mem x allregs || List.mem x allfregs || x = "min_caml_hp"
+let is_reg x = List.mem x allregs || List.mem x allfregs
 
 (* super-tenuki *)
 let rec remove_and_uniq xs = function

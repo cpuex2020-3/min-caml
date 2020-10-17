@@ -5,8 +5,8 @@ let rec iter n e =
   if n = 0 then e
   else
     let cse = Cse.f e in
-    print_string "** After cse **\n";
-    KNormal.print cse 0;
+    (*print_string "** After cse **\n";*)
+    (*KNormal.print cse 0;*)
     let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f cse)))) in
     if e = e' then e else
       iter (n - 1) e'
@@ -15,11 +15,11 @@ let lexbuf outchan l =
   Id.counter := 0;
   Typing.extenv := M.empty;
   let syntax = Parser.exp Lexer.token l in
-  print_string "** Output of Syntax.t **\n";
-  Syntax.print syntax 0;
+  (*print_string "** Output of Syntax.t **\n";*)
+  (*Syntax.print syntax 0;*)
   let kNormal = KNormal.f (Typing.f syntax) in
-  print_string "\n** Output of KNormal.t **\n";
-  KNormal.print kNormal 0;
+  (*print_string "\n** Output of KNormal.t **\n";*)
+  (*KNormal.print kNormal 0;*)
   Emit.f outchan
     (RegAlloc.f
        (Simm.f

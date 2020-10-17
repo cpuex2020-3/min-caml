@@ -1,33 +1,25 @@
-#if defined(__CYGWIN__) || defined(__MACH__)
-#define U(x) _##x
-#else
-#define U(x) x
-#endif
-#if defined(__MACH__)
-#define ALIGNSTACK0 andl $0xfffffff0, %esp
-#define ALIGNSTACK1 andl $0xfffffff0, %esp; pushl %eax; pushl %eax; pushl %eax
-#define ALIGNSTACK2 andl $0xfffffff0, %esp; pushl %eax; pushl %eax
-#define ALIGNSTACK3 andl $0xfffffff0, %esp; pushl %eax
-#else
-#define ALIGNSTACK0
-#define ALIGNSTACK1
-#define ALIGNSTACK2
-#define ALIGNSTACK3
-#endif
 .text
 .globl min_caml_print_int
 min_caml_print_int:
-	addi	sp, sp, -8
+	addi	sp, sp, -12
 	sw	ra, 0(sp)
 	sw	a1, 4(sp)
 	sw	a0, 8(sp)
 	mv	a1, a0
 	la	a0, format_int
+	andi	a2, sp, 7
+	beqz	a2, L0
+	addi	sp, sp, -4
 	call	printf
+	addi	sp, sp, 4
+	j	L1
+L0:
+	call	printf
+L1:
 	lw	a0, 8(sp)
 	lw	a1, 4(sp)
 	lw	ra, 0(sp)
-	addi	sp, sp, 8
+	addi	sp, sp, 12
 	ret
 .data
 format_int:
