@@ -103,7 +103,11 @@ and g' oc = function
     Printf.fprintf oc "\tmul\t%s,%s,-1\n" x x
   | NonTail(x), Add(_, y, z') ->
     if V(x) = z' then Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
-    else Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (pp_id_or_imm z')
+    else (
+      match z' with
+      | V(z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
+      | C(z) -> Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (string_of_int z)
+    )
   | NonTail(x), Sub(_, y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (j * i) y

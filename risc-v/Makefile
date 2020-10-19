@@ -27,7 +27,10 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-SUB_TESTS = fib gcd sub print shuffle
+SUB_TESTS = print sum-tail gcd sum fib ack even-odd \
+#adder funcomp \
+#shuffle \
+#sub
 
 sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
 all_tests: $(TESTS:%=test/%.cmp)
