@@ -100,7 +100,7 @@ and g' oc = function
   | NonTail(x), Mov(y) -> if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
-    Printf.fprintf oc "\tmul\t%s,%s,-1\n" x x
+    Printf.fprintf oc "\tsub\t%s,zero,%s\n" x x
   | NonTail(x), Add(_, y, z') ->
     if V(x) = z' then Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
     else (
