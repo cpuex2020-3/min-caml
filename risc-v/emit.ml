@@ -100,7 +100,7 @@ and g' oc = function
   | NonTail(x), Mov(y) -> if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
-    Printf.fprintf oc "\tsub\t%s,zero,%s\n" x x
+    Printf.fprintf oc "\tsub\t%s, zero, %s\n" x x
   | NonTail(x), Add(_, y, z') ->
     if V(x) = z' then Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
     else (
@@ -168,7 +168,7 @@ and g' oc = function
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
-  | _ -> raise (Failure "Unhandled!")
+  | _ -> raise (Failure "Unhandled in emit!")
 and g'_tail_if oc x y e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;

@@ -1,8 +1,6 @@
 open Asm
 
 (* for register coalescing *)
-(* [XXX] Call¤¬¤¢¤Ã¤¿¤é¡¢¤½¤³¤«¤éÀè¤ÏÌµ°ÕÌ£¤È¤¤¤¦¤«µÕ¸ú²Ì¤Ê¤Î¤ÇÄÉ¤ï¤Ê¤¤¡£
-         ¤½¤Î¤¿¤á¤Ë¡ÖCall¤¬¤¢¤Ã¤¿¤«¤É¤¦¤«¡×¤òÊÖ¤êÃÍ¤ÎÂè1Í×ÁÇ¤Ë´Þ¤á¤ë¡£ *)
 let rec target' src (dest, t) = function
   | Mov(x) when x = src && is_reg dest ->
     assert (t <> Type.Unit);
@@ -40,7 +38,6 @@ and target_args src all n = function (* auxiliary function for Call *)
     all.(n) :: target_args src all (n + 1) ys
   | _ :: ys -> target_args src all (n + 1) ys
 (* "register sourcing" (?) as opposed to register targeting *)
-(* ¡Êx86¤Î2¥ª¥Ú¥é¥ó¥ÉÌ¿Îá¤Î¤¿¤á¤Îregister coalescing¡Ë *)
 let rec source t = function
   | Ans(exp) -> source' t exp
   | Let(_, _, e) -> source t e
@@ -114,7 +111,7 @@ let find' x' regenv =
   | V(x) -> V(find x Type.Int regenv)
   | c -> c
 
-let rec g dest cont regenv = function (* Ì¿ÎáÎó¤Î¥ì¥¸¥¹¥¿³ä¤êÅö¤Æ (caml2html: regalloc_g) *)
+let rec g dest cont regenv = function
   | Ans(exp) -> g'_and_restore dest cont regenv exp
   | Let((x, t) as xt, exp, e) ->
     assert (not (M.mem x regenv));
@@ -122,7 +119,6 @@ let rec g dest cont regenv = function (* Ì¿ÎáÎó¤Î¥ì¥¸¥¹¥¿³ä¤�
     let (e1', regenv1) = g'_and_restore xt cont' regenv exp in
     let (_call, targets) = target x dest cont' in
     let sources = source t e1' in
-    (* ¥ì¥¸¥¹¥¿´Ö¤Îmov¤è¤ê¥á¥â¥ê¤ò²ð¤¹¤ëswap¤Î¤Û¤¦¤¬ÌäÂê¤Ê¤Î¤Ç¡¢sources¤è¤êtargets¤òÍ¥Àè *)
     (match alloc cont' regenv1 x t (targets @ sources) with
      | Spill(y) ->
        let r = M.find y regenv1 in
@@ -134,12 +130,12 @@ let rec g dest cont regenv = function (* Ì¿ÎáÎó¤Î¥ì¥¸¥¹¥¿³ä¤�
      | Alloc(r) ->
        let (e2', regenv2) = g dest cont (add x r regenv1) e in
        (concat e1' (r, t) e2', regenv2))
-and g'_and_restore dest cont regenv exp = (* »ÈÍÑ¤µ¤ì¤ëÊÑ¿ô¤ò¥¹¥¿¥Ã¥¯¤«¤é¥ì¥¸¥¹¥¿¤ØRestore (caml2html: regalloc_unspill) *)
+and g'_and_restore dest cont regenv exp =
   try g' dest cont regenv exp
   with NoReg(x, t) ->
     ((* Format.eprintf "restoring %s@." x; *)
       g dest cont regenv (Let((x, t), Restore(x), Ans(exp))))
-and g' dest cont regenv = function (* ³ÆÌ¿Îá¤Î¥ì¥¸¥¹¥¿³ä¤êÅö¤Æ (caml2html: regalloc_gprime) *)
+and g' dest cont regenv = function
   | Nop | Set _ | Restore _ as exp -> (Ans(exp), regenv)
   (*| SetL _ | Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)

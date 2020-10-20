@@ -5,6 +5,7 @@ type t =
 and exp =
   | Nop
   | Set of int
+  | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t * id_or_imm
@@ -39,6 +40,7 @@ let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 *)
 let reg_sp = "sp" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
+let reg_hp = "min_caml_hp"
 (*TODO: is is_reg*)
 let is_reg x = List.mem x allregs || List.mem x allfregs
 
@@ -52,7 +54,8 @@ let rec remove_and_uniq xs = function
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Set (_) | Restore(_) -> []
-  (*| SetL(_) | Comment(_) -> []*)
+  | SetL(_) -> []
+  (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
   (*| FMovD(x) | FNegD(x) | Save(x, _) -> [x]*)
   | Add(x, y', z) -> x :: y' :: fv_id_or_imm z

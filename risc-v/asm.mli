@@ -5,7 +5,7 @@ type t =
 and exp =
   | Nop
   | Set of int
-  (*| SetL of Id.l*)
+  | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t * id_or_imm
@@ -49,6 +49,7 @@ val reg_fsw : Id.t
 val reg_ra : Id.t
 *)
 val reg_sp : Id.t
+val reg_hp : Id.t
 val is_reg : Id.t -> bool
 
 val fv : t -> Id.t list
