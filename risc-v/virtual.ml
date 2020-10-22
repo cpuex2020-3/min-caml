@@ -92,11 +92,13 @@ let rec g env = function
                     store_fv))))
   | Closure.AppCls(x, ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
-    Ans(CallCls(x, int, float))
+    let reg_cl_buf = Id.genid "reg_cl_buf" in
+    Let((reg_cl_buf, Type.Int), Ld(reg_cl, C(0), 1),
+        Ans(CallCls(x, int, float, reg_cl_buf))) (* NEXT: seq にしてmv a7, a0を実現する？ *)
   | Closure.AppDir(Id.L(x), ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallDir(Id.L(x), int, float))
-  (*| Closure.Tuple(xs) -> (* ÁÈ¤ÎÀ¸À® (caml2html: virtual_tuple) *)*)
+  (*| Closure.Tuple(xs) -> *)
   (*let y = Id.genid "t" in*)
   (*let (offset, store) =*)
   (*expand*)

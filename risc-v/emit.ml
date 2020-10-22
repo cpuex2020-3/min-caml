@@ -63,10 +63,10 @@ and count_stack_size' = function
   | Tail, IfLE(x, y, e1, e2) -> count_stack_size'_tail_if y x e1 e2 "bge" "blt"
   | NonTail(z), IfEq(x, y, e1, e2) -> count_stack_size'_non_tail_if (NonTail(z)) x y e1 e2 "be" "bne"
   | NonTail(z), IfLE(x, y, e1, e2) -> count_stack_size'_non_tail_if (NonTail(z)) y x e1 e2 "bge" "blt"
-  | Tail, CallCls(x, ys, zs) -> 0
-  | Tail, CallDir(Id.L(x), ys, zs) -> 0
-  | NonTail(a), CallCls(x, ys, zs) -> 0
-  | NonTail(a), CallDir(Id.L(x), ys, zs) -> 0
+  | Tail, CallCls(_) -> 0
+  | Tail, CallDir(_) -> 0
+  | NonTail(_), CallCls(_) -> 0
+  | NonTail(_), CallDir(_) -> 0
   | _ -> 0
 and count_stack_size'_tail_if x y e1 e2 b bn =
   let stackset_back = !stackset in
@@ -97,7 +97,12 @@ and g' oc = function
   | NonTail(_), Nop -> ()
   (*| NonTail(x), Set(i) -> Printf.fprintf oc "\taddi\t%s, zero, %d\n" x i TODO: handle large numbers*)
   | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
-  | NonTail(x), Mov(y) -> if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y
+  | NonTail(x), SetL(L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
+  | NonTail(x), Mov(y) ->
+    if y = reg_hp then
+      Printf.fprintf oc "\tla\t%s, %s\n" x y
+    else if x <> y then
+      Printf.fprintf oc "\tmv\t%s, %s\n" x y
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
     Printf.fprintf oc "\tsub\t%s, zero, %s\n" x x
@@ -140,20 +145,20 @@ and g' oc = function
     g'_non_tail_if oc (NonTail(z)) x y e1 e2 "be" "bne"
   | NonTail(z), IfLE(x, y, e1, e2) ->
     g'_non_tail_if oc (NonTail(z)) y x e1 e2 "bge" "blt"
-  | Tail, CallCls(x, ys, zs) ->
+  | Tail, CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
-    if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, %d\n" !cur_stack_size;
+    if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, -%d\n" !cur_stack_size;
     Printf.fprintf oc "\tj\t*(%s)\n" reg_cl;
   | Tail, CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, %d\n" !cur_stack_size;
     Printf.fprintf oc "\tj\t%s\n" x;
-  | NonTail(a), CallCls(x, ys, zs) ->
+  | NonTail(a), CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
-    let ss = stacksize () in
-    if ss > 0 then Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
-    Printf.fprintf oc "\tTODO:call\t*(%s)\n" reg_cl;
-    if ss > 0 then Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 4);
+    Printf.fprintf oc "\tsw\tra, 0(%s)\n" reg_sp;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
+    Printf.fprintf oc "\tjalr\t%s\n" reg_cl_buf;
+    Printf.fprintf oc "\tlw\tra, 0(%s)\n" reg_sp;
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
@@ -161,6 +166,7 @@ and g' oc = function
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in
+    (* TODO: 0(sp) *)
     Printf.fprintf oc "\tsw\tra, %d(%s)\n" ss reg_sp;
     Printf.fprintf oc "\tjal\t%s\n" x;
     Printf.fprintf oc "\tlw\tra, %d(%s)\n" ss reg_sp;

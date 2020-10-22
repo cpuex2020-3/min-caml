@@ -18,7 +18,7 @@ and exp =
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
-  | CallCls of Id.t * Id.t list * Id.t list
+  | CallCls of Id.t * Id.t list * Id.t list * Id.t
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t
   | Restore of Id.t
@@ -42,7 +42,7 @@ let reg_sp = "sp" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
 let reg_hp = "min_caml_hp"
 (*TODO: is is_reg*)
-let is_reg x = List.mem x allregs || List.mem x allfregs
+let is_reg x = List.mem x allregs || List.mem x allfregs || x = reg_hp
 
 (* super-tenuki *)
 let rec remove_and_uniq xs = function
@@ -68,7 +68,7 @@ let rec fv_exp = function
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
   (*| IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
-  | CallCls(x, ys, zs) -> x :: ys @ zs
+  | CallCls(x, ys, zs, reg_cl_buf) -> x :: reg_cl_buf :: ys @ zs
   | CallDir(_, ys, zs) -> ys @ zs
 and fv = function
   | Ans(exp) -> fv_exp exp

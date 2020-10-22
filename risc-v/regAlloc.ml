@@ -17,10 +17,10 @@ let rec target' src (dest, t) = function
   (*let c1, rs1 = target src (dest, t) e1 in*)
   (*let c2, rs2 = target src (dest, t) e2 in*)
   (*c1 && c2, rs1 @ rs2*)
-  | CallCls(x, ys, zs) ->
+  | CallCls(x, ys, zs, reg_cl_buf) ->
     true, (target_args src regs 0 ys @
            target_args src fregs 0 zs @
-           if x = src then [reg_cl] else [])
+           if x = src then [reg_cl; reg_cl_buf] else [reg_cl_buf])
   | CallDir(_, ys, zs) ->
     true, (target_args src regs 0 ys @
            target_args src fregs 0 zs)
@@ -54,7 +54,7 @@ and source' t = function
   | CallCls _ | CallDir _ -> (match t with Type.Unit -> [] | Type.Float -> [fregs.(0)] | _ -> [regs.(0)])
   | _ -> []
 
-type alloc_result = (* alloc¤Ë¤ª¤¤¤Æspilling¤¬¤¢¤Ã¤¿¤«¤É¤¦¤«¤òÉ½¤¹¥Ç¡¼¥¿·¿ *)
+type alloc_result =
   | Alloc of Id.t (* allocated register *)
   | Spill of Id.t (* spilled variable *)
 let rec alloc cont regenv x t prefer =
@@ -69,7 +69,7 @@ let rec alloc cont regenv x t prefer =
   if is_reg x then Alloc(x) else
     let free = fv cont in
     try
-      let live = (* À¸¤­¤Æ¤¤¤ë¥ì¥¸¥¹¥¿ *)
+      let live =
         List.fold_left
           (fun live y ->
              if is_reg y then S.add y live else
@@ -77,7 +77,7 @@ let rec alloc cont regenv x t prefer =
                with Not_found -> live)
           S.empty
           free in
-      let r = (* ¤½¤¦¤Ç¤Ê¤¤¥ì¥¸¥¹¥¿¤òÃµ¤¹ *)
+      let r =
         List.find
           (fun r -> not (S.mem r live))
           (prefer @ all) in
@@ -85,7 +85,7 @@ let rec alloc cont regenv x t prefer =
       Alloc(r)
     with Not_found ->
       Format.eprintf "register allocation failed for %s@." x;
-      let y = (* ·¿¤Î¹ç¤¦¥ì¥¸¥¹¥¿ÊÑ¿ô¤òÃµ¤¹ *)
+      let y =
         List.find
           (fun y ->
              not (is_reg y) &&
@@ -137,7 +137,8 @@ and g'_and_restore dest cont regenv exp =
       g dest cont regenv (Let((x, t), Restore(x), Ans(exp))))
 and g' dest cont regenv = function
   | Nop | Set _ | Restore _ as exp -> (Ans(exp), regenv)
-  (*| SetL _ | Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
+  | SetL _ as exp -> (Ans(exp), regenv)
+  (*| Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
   | Add(x, y', z) -> (Ans(Add(find x Type.Int regenv, find y' Type.Int regenv, find' z regenv)), regenv)
@@ -159,11 +160,12 @@ and g' dest cont regenv = function
   (*| IfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2*)
   (*| IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2*)
   (*| IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2*)
-  | CallCls(x, ys, zs) as exp ->
+  | CallCls(x, ys, zs, reg_cl_buf) as exp ->
+    (* NEXT *)
     if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
     else
-      g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs)) ys zs
+      g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs, find reg_cl_buf Type.Int regenv)) ys zs
   | CallDir(Id.L(x), ys, zs) as exp ->
     if List.length ys > Array.length regs || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
