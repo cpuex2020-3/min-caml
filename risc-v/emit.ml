@@ -44,49 +44,6 @@ let rec shuffle sw xys =
   | xys, acyc -> acyc @ shuffle sw xys
 
 type dest = Tail | NonTail of Id.t
-let rec count_stack_size = function
-  | dest, Ans(exp) -> count_stack_size' (dest, exp)
-  | dest, Let((x, t), exp, e) ->
-    count_stack_size' (NonTail(x), exp) + count_stack_size (dest, e)
-and count_stack_size' = function
-  | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) -> 1
-  | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
-    count_stack_size' (NonTail(Id.gentmp Type.Unit), exp)
-  | Tail, (Set _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
-    count_stack_size' (NonTail(regs.(0)), exp)
-  | Tail, (Restore(x) as exp) ->
-    (match locate x with
-     | [i] -> count_stack_size' (NonTail(regs.(0)), exp)
-     | [i; j] when i + 1 = j -> count_stack_size' (NonTail(fregs.(0)), exp)
-     | _ -> assert false)
-  | Tail, IfEq(x, y, e1, e2) -> count_stack_size'_tail_if x y e1 e2 "be" "bne"
-  | Tail, IfLE(x, y, e1, e2) -> count_stack_size'_tail_if y x e1 e2 "bge" "blt"
-  | NonTail(z), IfEq(x, y, e1, e2) -> count_stack_size'_non_tail_if (NonTail(z)) x y e1 e2 "be" "bne"
-  | NonTail(z), IfLE(x, y, e1, e2) -> count_stack_size'_non_tail_if (NonTail(z)) y x e1 e2 "bge" "blt"
-  | Tail, CallCls(_) -> 0
-  | Tail, CallDir(_) -> 0
-  | NonTail(_), CallCls(_) -> 0
-  | NonTail(_), CallDir(_) -> 0
-  | _ -> 0
-and count_stack_size'_tail_if x y e1 e2 b bn =
-  let stackset_back = !stackset in
-  let first_half = count_stack_size (Tail, e1) in
-  stackset := stackset_back;
-  first_half + count_stack_size (Tail, e2)
-and count_stack_size'_non_tail_if dest x y e1 e2 b bn =
-  let stackset_back = !stackset in
-  let cur = count_stack_size (dest, e1) in
-  let stackset1 = !stackset in
-  stackset := stackset_back;
-  let cur = count_stack_size (dest, e2) + cur in
-  let stackset2 = !stackset in
-  stackset := S.inter stackset1 stackset2;
-  cur
-
-let cur_stack_size = ref 0
-let epilog oc () =
-  if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, %d\n" !cur_stack_size;
-  Printf.fprintf oc "\tret\n"
 
 let rec g oc = function
   | dest, Ans(exp) -> g' oc (dest, exp)
@@ -130,16 +87,16 @@ and g' oc = function
     Printf.fprintf oc "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
-    epilog oc ()
+    Printf.fprintf oc "\tret\n"
   | Tail, (Set _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
-    epilog oc ()
+    Printf.fprintf oc "\tret\n"
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' oc (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
-    epilog oc ()
+    Printf.fprintf oc "\tret\n"
   | Tail, IfEq(x, y, e1, e2) ->
     g'_tail_if oc x y e1 e2 "be" "bne"
   | Tail, IfLE(x, y, e1, e2) ->
@@ -150,18 +107,21 @@ and g' oc = function
     g'_non_tail_if oc (NonTail(z)) y x e1 e2 "bge" "blt"
   | Tail, CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
-    if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, -%d\n" !cur_stack_size;
+    let ss = stacksize () in
+    if ss > 0 then Printf.fprintf oc "\taddi\tsp, sp, %d\n" ss;
     Printf.fprintf oc "\tj\t*(%s)\n" reg_cl;
   | Tail, CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
-    if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, %d\n" !cur_stack_size;
     Printf.fprintf oc "\tj\t%s\n" x;
   | NonTail(a), CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
-    Printf.fprintf oc "\tsw\tra, 0(%s)\n" reg_sp;
+    let ss = stacksize () in
+    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" reg_ra ss reg_sp;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
     Printf.fprintf oc "\tjalr\t%s\n" reg_cl_buf;
-    Printf.fprintf oc "\tlw\tra, 0(%s)\n" reg_sp;
+    Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 4);
+    Printf.fprintf oc "\tlw\t%s, %d(%s)\n" reg_ra ss reg_sp;
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
@@ -170,7 +130,9 @@ and g' oc = function
     g'_args oc [] ys zs;
     let ss = stacksize () in
     Printf.fprintf oc "\tsw\tra, %d(%s)\n" ss reg_sp;
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
     Printf.fprintf oc "\tjal\t%s\n" x;
+    Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 4);
     Printf.fprintf oc "\tlw\tra, %d(%s)\n" ss reg_sp;
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
@@ -229,13 +191,10 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   Printf.fprintf oc "%s:\n" x;
   stackset := S.empty;
   stackmap := [];
-  (* stack usage should be an open section, and the area for `ra` may be needed, so +2 *)
-  cur_stack_size := 4 * (count_stack_size (Tail, e) + 2);
-  if !cur_stack_size > 0 then Printf.fprintf oc "\taddi\tsp, sp, -%d\n" !cur_stack_size;
   g oc (Tail, e)
 
 let f oc (Prog(data, fundefs, e)) =
-  let callee_saved_regs = ["s0"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"] in
+  let callee_saved_regs = ["fp"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"] in
   let callee_saved_regs_count = List.length callee_saved_regs in
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc ".data\n";
@@ -250,15 +209,19 @@ let f oc (Prog(data, fundefs, e)) =
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc ".globl\tmin_caml_start\n";
   Printf.fprintf oc "min_caml_start:\n";
+  Printf.fprintf oc "\taddi\tsp, sp, -52\n";
+  List.iteri (
+    fun i r -> Printf.fprintf oc "\tsw\t%s, %d(sp)\n" r ((callee_saved_regs_count - i) * 4);
+  ) callee_saved_regs;
   stackset := S.empty;
   stackmap := [];
-  Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (4 * callee_saved_regs_count);
-  List.iteri (
-    fun i r -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" r ((callee_saved_regs_count - i) * 4) reg_sp;
-  ) callee_saved_regs;
+  Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
+  Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
+  Printf.fprintf oc "\tli\tt0, 0\n";
+  Printf.fprintf oc "\tsw\t%s, %s, t0\n" regs.(0) reg_hp;
   g oc (NonTail(regs.(0)), e);
   List.iteri (
-    fun i r -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" r ((i + 1) * 4) reg_sp;
+    fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
   ) (List.rev callee_saved_regs);
-  Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (4 * List.length callee_saved_regs);
+  Printf.fprintf oc "\taddi\tsp, sp, 52\n";
   Printf.fprintf oc "\tret\n";
