@@ -116,6 +116,9 @@ and g' oc = function
   | NonTail(x), Sub(_, y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(_), St(x, y, V(t), _) ->
+    Printf.fprintf oc "\tli\t%s, 0\n" t;
+    Printf.fprintf oc "\tsw\t%s, %s, %s\n" x y t
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
     Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (offset y) reg_sp
@@ -166,14 +169,13 @@ and g' oc = function
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in
-    (* TODO: 0(sp) *)
     Printf.fprintf oc "\tsw\tra, %d(%s)\n" ss reg_sp;
     Printf.fprintf oc "\tjal\t%s\n" x;
     Printf.fprintf oc "\tlw\tra, %d(%s)\n" ss reg_sp;
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
+      Printf.fprintf oc "\tmovsd\t%s, %s\n" a fregs.(0)
   | _ -> raise (Failure "Unhandled in emit!")
 and g'_tail_if oc x y e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in

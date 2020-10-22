@@ -85,20 +85,24 @@ let rec g env = function
         (fun y offset store_fv -> seq(StDF(y, x, C(offset), 1), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset), 1), store_fv)) in
     Let((x, t), Mov(reg_hp),
-        Let((reg_hp, Type.Int), Add(reg_hp, reg_hp, C(align offset)),
-            let z = Id.genid "l" in
-            Let((z, Type.Int), SetL(l),
-                seq(St(z, x, C(0), 1),
-                    store_fv))))
+        let x' = Id.genid "l" in
+        Let((x', Type.Int), Add(x, x, C(align offset)),
+            let t' = Id.genid "t" in
+            Let((t', Type.Int), Nop, (* Is it ok with Nop? (not Set(0) because the St will be replaced by C(0) in simm.ml) *)
+                seq(St(x', reg_hp, V(t'), 0),
+                    let z = Id.genid "l" in
+                    Let((z, Type.Int), SetL(l),
+                        seq(St(z, x, C(0), 1),
+                            store_fv))))))
   | Closure.AppCls(x, ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
-    let reg_cl_buf = Id.genid "reg_cl_buf" in
-    Let((reg_cl_buf, Type.Int), Ld(reg_cl, C(0), 1),
-        Ans(CallCls(x, int, float, reg_cl_buf))) (* NEXT: seq にしてmv a7, a0を実現する？ *)
+    let reg_cl_buf = Id.genid "l" in
+    Let((reg_cl_buf, Type.Int), Nop, (* need to 'declare' the reg_cl_buf to add to env. otherwise, Fatal Error would be raised *)
+        Ans(CallCls(x, int, float, reg_cl_buf)))
   | Closure.AppDir(Id.L(x), ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallDir(Id.L(x), int, float))
-  (*| Closure.Tuple(xs) -> *)
+  (*| Closure.Tuple(xs) ->*)
   (*let y = Id.genid "t" in*)
   (*let (offset, store) =*)
   (*expand*)

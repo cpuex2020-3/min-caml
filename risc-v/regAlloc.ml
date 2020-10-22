@@ -20,7 +20,7 @@ let rec target' src (dest, t) = function
   | CallCls(x, ys, zs, reg_cl_buf) ->
     true, (target_args src regs 0 ys @
            target_args src fregs 0 zs @
-           if x = src then [reg_cl; reg_cl_buf] else [reg_cl_buf])
+           if x = src then [reg_cl] else [])
   | CallDir(_, ys, zs) ->
     true, (target_args src regs 0 ys @
            target_args src fregs 0 zs)
@@ -161,7 +161,6 @@ and g' dest cont regenv = function
   (*| IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2*)
   (*| IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2*)
   | CallCls(x, ys, zs, reg_cl_buf) as exp ->
-    (* NEXT *)
     if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
     else
