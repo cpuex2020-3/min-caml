@@ -27,13 +27,12 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-SUB_TESTS = funcomp
-
-#SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
-#join-stack join-stack2 join-stack3 \
-#join-reg join-reg2 \
-#adder cls-rec cls-bug
-#adder funcomp spill2
+# funcomp works, but somehow print_int doesn't work. check with `echo $?`.
+SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
+join-stack join-stack2 join-stack3 \
+join-reg join-reg2 \
+adder cls-rec cls-bug \
+funcomp
 
 sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
 all_tests: $(TESTS:%=test/%.cmp)

@@ -1,12 +1,12 @@
 .text
 .globl min_caml_print_int
 min_caml_print_int:
-	addi	sp, sp, -12
-	sw	ra, 0(sp)
-	sw	a1, 4(sp)
-	sw	a0, 8(sp)
+	addi	sp, sp, -8
+	sw	fp, 4(sp)
+	mv	fp, sp
 	mv	a1, a0
 	la	a0, format_int
+	sw	ra, 0(sp)
 	andi	a2, sp, 7
 	beqz	a2, L0
 	addi	sp, sp, -4
@@ -16,10 +16,10 @@ min_caml_print_int:
 L0:
 	call	printf
 L1:
-	lw	a0, 8(sp)
-	lw	a1, 4(sp)
 	lw	ra, 0(sp)
-	addi	sp, sp, 12
+	mv	sp, fp
+	lw	fp, 4(sp)
+	addi	sp, sp, 8
 	ret
 .data
 format_int:
