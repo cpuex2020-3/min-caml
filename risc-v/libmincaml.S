@@ -1,4 +1,26 @@
 .text
+.globl min_caml_print_newline
+min_caml_print_newline:
+	addi	sp, sp, -8
+	sw	fp, 4(sp)
+	mv	fp, sp
+	mv	a1, a0
+	li	a0, 10
+	sw	ra, 0(sp)
+	andi	a2, sp, 7
+	beqz	a2, newline.0
+	addi	sp, sp, -4
+	call	putchar
+	addi	sp, sp, 4
+	j	newline.1
+newline.0:
+	call	putchar
+newline.1:
+	lw	ra, 0(sp)
+	mv	sp, fp
+	lw	fp, 4(sp)
+	addi	sp, sp, 8
+	ret
 .globl min_caml_print_int
 min_caml_print_int:
 	addi	sp, sp, -8

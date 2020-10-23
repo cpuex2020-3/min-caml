@@ -100,30 +100,30 @@ let rec g env = function
   | Closure.AppDir(Id.L(x), ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallDir(Id.L(x), int, float))
-  (*| Closure.Tuple(xs) ->*)
-  (*let y = Id.genid "t" in*)
-  (*let (offset, store) =*)
-  (*expand*)
-  (*(List.map (fun x -> (x, M.find x env)) xs)*)
-  (*(0, Ans(Mov(y)))*)
-  (*(fun x offset store -> seq(StDF(x, y, C(offset), 1), store))*)
-  (*(fun x _ offset store -> seq(St(x, y, C(offset), 1), store)) in*)
-  (*Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),*)
-  (*Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),*)
-  (*store))*)
-  (*| Closure.LetTuple(xts, y, e2) ->*)
-  (*let s = Closure.fv e2 in*)
-  (*let (offset, load) =*)
-  (*expand*)
-  (*xts*)
-  (*(0, g (M.add_list xts env) e2)*)
-  (*(fun x offset load ->*)
-  (*if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)*)
-  (*fletd(x, LdDF(y, C(offset), 1), load))*)
-  (*(fun x t offset load ->*)
-  (*if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)*)
-  (*Let((x, t), Ld(y, C(offset), 1), load)) in*)
-  (*load*)
+  | Closure.Tuple(xs) ->
+    let y = Id.genid "t" in
+    let (offset, store) =
+      expand
+        (List.map (fun x -> (x, M.find x env)) xs)
+        (0, Ans(Mov(y)))
+        (fun x offset store -> seq(StDF(x, y, C(offset), 1), store))
+        (fun x _ offset store -> seq(St(x, y, C(offset), 1), store)) in
+    Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
+        Let((reg_hp, Type.Int), Add(reg_hp, reg_hp, C(align offset)),
+            store))
+  | Closure.LetTuple(xts, y, e2) ->
+    let s = Closure.fv e2 in
+    let (offset, load) =
+      expand
+        xts
+        (0, g (M.add_list xts env) e2)
+        (fun x offset load ->
+           if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)
+             fletd(x, LdDF(y, C(offset), 1), load))
+        (fun x t offset load ->
+           if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)
+             Let((x, t), Ld(y, C(offset), 1), load)) in
+    load
   | Closure.Get(x, y) ->
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
