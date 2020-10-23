@@ -31,6 +31,8 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t ->
        (offset + 4, addi x t offset acc))
 
+let hp_offset = ref 0
+
 let rec g env = function
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Set(i))
@@ -85,15 +87,11 @@ let rec g env = function
         (fun y offset store_fv -> seq(StDF(y, x, C(offset), 1), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset), 1), store_fv)) in
     Let((x, t), Mov(reg_hp),
-        let x' = Id.genid "l" in
-        Let((x', Type.Int), Add(x, x, C(align offset)),
-            let t' = Id.genid "t" in
-            Let((t', Type.Int), Nop, (* Is it ok with Nop? (not Set(0) because the St will be replaced by C(0) in simm.ml) *)
-                seq(St(x', reg_hp, V(t'), 0),
-                    let z = Id.genid "l" in
-                    Let((z, Type.Int), SetL(l),
-                        seq(St(z, x, C(0), 1),
-                            store_fv))))))
+        Let((reg_hp, Type.Int), Add(reg_hp, reg_hp, C(align offset)),
+            let z = Id.genid "l" in
+            Let((z, Type.Int), SetL(l),
+                seq(St(z, x, C(0), 1),
+                    store_fv))))
   | Closure.AppCls(x, ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     let reg_cl_buf = Id.genid "l" in

@@ -27,10 +27,12 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
-join-stack join-stack2 join-stack3 \
-join-reg join-reg2 \
-adder
+SUB_TESTS = funcomp
+
+#SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
+#join-stack join-stack2 join-stack3 \
+#join-reg join-reg2 \
+#adder cls-rec cls-bug
 #adder funcomp spill2
 
 sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes

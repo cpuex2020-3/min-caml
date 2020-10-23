@@ -40,7 +40,7 @@ let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 *)
 let reg_sp = "fp" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
-let reg_hp = "min_caml_hp"
+let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dynamically.(See Notability for more info) *)
 (*TODO: is is_reg*)
 let is_reg x = List.mem x allregs || List.mem x allfregs || x = reg_hp
 

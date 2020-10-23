@@ -56,9 +56,7 @@ and g' oc = function
   | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
   | NonTail(x), SetL(L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | NonTail(x), Mov(y) ->
-    if y = reg_hp then
-      Printf.fprintf oc "\tla\t%s, %s\n" x y
-    else if x <> y then
+    if x <> y then
       Printf.fprintf oc "\tmv\t%s, %s\n" x y
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
@@ -107,9 +105,8 @@ and g' oc = function
     g'_non_tail_if oc (NonTail(z)) y x e1 e2 "bge" "blt"
   | Tail, CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
-    let ss = stacksize () in
-    if ss > 0 then Printf.fprintf oc "\taddi\tsp, sp, %d\n" ss;
-    Printf.fprintf oc "\tj\t*(%s)\n" reg_cl;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
+    Printf.fprintf oc "\tjr\t%s\n" reg_cl_buf;
   | Tail, CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     Printf.fprintf oc "\tj\t%s\n" x;
@@ -217,8 +214,7 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  Printf.fprintf oc "\tli\tt0, 0\n";
-  Printf.fprintf oc "\tsw\t%s, %s, t0\n" regs.(0) reg_hp;
+  Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;
   g oc (NonTail(regs.(0)), e);
   List.iteri (
     fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
