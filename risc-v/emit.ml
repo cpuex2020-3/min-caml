@@ -191,7 +191,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   g oc (Tail, e)
 
 let f oc (Prog(data, fundefs, e)) =
-  let callee_saved_regs = ["fp"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"] in
+  let callee_saved_regs = ["s0"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"] in
   let callee_saved_regs_count = List.length callee_saved_regs in
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc ".data\n";

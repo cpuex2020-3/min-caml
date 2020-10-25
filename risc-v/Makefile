@@ -27,12 +27,14 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
+SUB_TESTS = non-tail-if2
+
 # funcomp and cls-reg-bug works, but somehow print_int doesn't work. check with `echo $?`.
-SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
-join-stack join-stack2 join-stack3 \
-join-reg join-reg2 \
-adder cls-rec cls-bug \
-funcomp cls-reg-bug
+#SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
+#join-stack join-stack2 join-stack3 \
+#join-reg join-reg2 \
+#adder cls-rec cls-bug \
+#funcomp cls-reg-bug
 
 sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
 all_tests: $(TESTS:%=test/%.cmp)
@@ -40,12 +42,15 @@ all_tests: $(TESTS:%=test/%.cmp)
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
 
+SPIKE = /opt/riscv/spike/bin/spike
+PK = /opt/riscv/pk/riscv32-unknown-elf/bin/pk
+
 test/%.s: $(RESULT) test/%.ml
 	./$(RESULT) test/$*
 test/%: test/%.s libmincaml.S stub.c
-	riscv64-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
+	riscv32-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
 test/%.res: test/%
-	spike /opt/riscv/riscv64-unknown-elf/bin/pk $< > $@
+	$(SPIKE) $(PK) $< > $@
 test/%.ans: test/%.ml
 	ocaml $< >> $@
 test/%.cmp: test/%.res test/%.ans

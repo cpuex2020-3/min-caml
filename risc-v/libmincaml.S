@@ -2,8 +2,8 @@
 .globl min_caml_print_newline
 min_caml_print_newline:
 	addi	sp, sp, -8
-	sw	fp, 4(sp)
-	mv	fp, sp
+	sw	s0, 4(sp)
+	mv	s0, sp
 	mv	a1, a0
 	li	a0, 10
 	sw	ra, 0(sp)
@@ -17,37 +17,29 @@ newline.0:
 	call	putchar
 newline.1:
 	lw	ra, 0(sp)
-	mv	sp, fp
-	lw	fp, 4(sp)
+	mv	sp, s0
+	lw	s0, 4(sp)
 	addi	sp, sp, 8
 	ret
 .globl min_caml_print_int
 min_caml_print_int:
 	addi	sp, sp, -8
-	sw	fp, 4(sp)
-	mv	fp, sp
+	sw	s0, 4(sp)
+	mv	s0, sp
 	mv	a1, a0
 	la	a0, format_int
 	sw	ra, 0(sp)
-	andi	a2, sp, 7
-	beqz	a2, L0
-	addi	sp, sp, -4
 	call	printf
-	addi	sp, sp, 4
-	j	L1
-L0:
-	call	printf
-L1:
 	lw	ra, 0(sp)
-	mv	sp, fp
-	lw	fp, 4(sp)
+	mv	sp, s0
+	lw	s0, 4(sp)
 	addi	sp, sp, 8
 	ret
 .globl min_caml_create_array
 min_caml_create_array:
 	addi	sp, sp, -12
-	sw	fp, 8(sp)
-	mv	fp, sp
+	sw	s0, 8(sp)
+	mv	s0, sp
 	sw	a3, 4(sp)
 	sw	a2,	0(sp)
 	mv	a3, a0
@@ -60,8 +52,8 @@ create_array_loop:
 create_array_exit:
 	lw	a2, 0(sp)
 	lw	a3, 4(sp)
-	mv	sp, fp
-	lw	fp, 8(sp)
+	mv	sp, s0
+	lw	s0, 8(sp)
 	addi	sp, sp, 12
 	ret
 create_array_cont:

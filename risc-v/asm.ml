@@ -38,7 +38,7 @@ let reg_cl = regs.(Array.length regs - 1) (* closure address (caml2html: sparcas
 let reg_sw = regs.(Array.length regs - 1) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 *)
-let reg_sp = "fp" (* stack pointer *)
+let reg_sp = "s0" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
 let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dynamically.(See Notability for more info) *)
 (*TODO: is is_reg*)
