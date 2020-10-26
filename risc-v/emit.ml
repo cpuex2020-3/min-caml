@@ -1,8 +1,5 @@
 open Asm
 
-external gethi : float -> int32 = "gethi"
-external getlo : float -> int32 = "getlo"
-
 let pre_count_stack_set = ref S.empty
 let stackset = ref S.empty
 let stackmap = ref []
@@ -225,7 +222,7 @@ and g'_args oc x_reg_cl ys zs =
       (0, [])
       zs in
   List.iter
-    (fun (z, fr) -> Printf.fprintf oc "\tmovsd\t%s, %s\n" z fr)
+    (fun (z, fr) -> Printf.fprintf oc "\tfmv.s\t%s, %s\n" fr z)
     (shuffle sw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
@@ -243,8 +240,7 @@ let f oc (Prog(data, fundefs, e)) =
   List.iter
     (fun (Id.L(x), d) ->
        Printf.fprintf oc "%s:\t# %f\n" x d;
-       Printf.fprintf oc "\t.long\t0x%lx\n" (gethi d);
-       Printf.fprintf oc "\t.long\t0x%lx\n" (getlo d))
+       Printf.fprintf oc "\t.word\t0x%lx\n" (Int32.bits_of_float d))
     data;
   Printf.fprintf oc ".text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;

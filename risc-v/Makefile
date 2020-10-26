@@ -27,7 +27,7 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-SUB_TESTS = float
+SUB_TESTS = spill2
 
 # funcomp and cls-reg-bug works, but somehow print_int doesn't work. check with `echo $?`.
 #SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
@@ -42,13 +42,16 @@ all_tests: $(TESTS:%=test/%.cmp)
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
 
-SPIKE = /opt/riscv/spike/bin/spike
-PK = /opt/riscv/pk/riscv32-unknown-elf/bin/pk
+#SPIKE = /opt/riscv/spike/bin/spike
+#PK = /opt/riscv/pk/riscv32-unknown-elf/bin/pk
+SPIKE = spike
+PK = pk
 
 test/%.s: $(RESULT) test/%.ml
 	./$(RESULT) test/$*
 test/%: test/%.s libmincaml.S stub.c
-	riscv32-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
+	riscv64-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
+	#riscv32-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
 test/%.res: test/%
 	$(SPIKE) $(PK) $< > $@
 test/%.ans: test/%.ml

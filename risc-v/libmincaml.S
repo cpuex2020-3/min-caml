@@ -30,21 +30,20 @@ newline.1:
 	.text
 	.align	2
 	.globl	min_caml_print_int
-	.type	min_caml_print_int, @function
 min_caml_print_int:
-	addi	sp,sp,-32
+	addi	sp,sp,-36
 	sw	ra,28(sp)
 	sw	s0,24(sp)
-	addi	s0,sp,32
-	sw	a0,-20(s0)
-	lw	a1,-20(s0)
-	lui	a5,%hi(.LC0)
-	addi	a0,a5,%lo(.LC0)
+	addi	s0,sp,36
+	mv	a1, a0
+	li	a4, 9
+	lui	a0,%hi(.LC0)
+	addi	a0,a0,%lo(.LC0)
 	call	printf
 	nop
 	lw	ra,28(sp)
 	lw	s0,24(sp)
-	addi	sp,sp,32
+	addi	sp,sp,36
 	jr	ra
 	.size	min_caml_print_int, .-min_caml_print_int
 
@@ -75,6 +74,29 @@ create_array_cont:
 	add	a2, t1, a0
 	sw	a1, 0(a2)
 	j	create_array_loop
+
+	.globl min_caml_sqrt
+min_caml_sqrt:
+	fsqrt.s	fa0, fa0
+	ret
+	.globl min_caml_abs_float
+min_caml_abs_float:
+	ret
+	.globl min_caml_sin
+min_caml_sin:
+	ret
+	.globl min_caml_cos
+min_caml_cos:
+	ret
+	.globl min_caml_float_of_int
+min_caml_float_of_int:
+	fcvt.s.w	fa0, a0
+	ret
+	.globl min_caml_int_of_float
+min_caml_int_of_float:
+	fcvt.w.s	a0, fa0
+	ret
+
 .data
 format_int:
 	.string	"%d"
