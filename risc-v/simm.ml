@@ -10,8 +10,8 @@ let rec g env = function
         e')
   | Let(xt, exp, e) -> Let(xt, g' env exp, g env e)
 and g' env = function
-  | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
-  | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))
+  | Add(x, y) when M.mem y env -> AddI(x, M.find y env)
+  | Add(x, y) when M.mem x env -> AddI(y, M.find x env)
   | Ld(x, V(y), i) when M.mem y env -> Ld(x, C(M.find y env), i)
   | St(x, y, V(z), i) when M.mem z env -> St(x, y, C(M.find z env), i)
   | LdDF(x, V(y), i) when M.mem y env -> LdDF(x, C(M.find y env), i)
@@ -19,8 +19,8 @@ and g' env = function
   | IfEq(x, y', e1, e2) -> IfEq(x, y', g env e1, g env e2)
   | IfLE(x, y', e1, e2) -> IfLE(x, y', g env e1, g env e2)
   (*| IfGE(x, y', e1, e2) -> IfGE(x, y', g env e1, g env e2)*)
-  (*| IfFEq(x, y, e1, e2) -> IfFEq(x, y, g env e1, g env e2)*)
-  (*| IfFLE(x, y, e1, e2) -> IfFLE(x, y, g env e1, g env e2)*)
+  | IfFEq(x, y, cmp, e1, e2) -> IfFEq(x, y, cmp, g env e1, g env e2)
+  | IfFLE(x, y, cmp, e1, e2) -> IfFLE(x, y, cmp, g env e1, g env e2)
   | e -> e
 
 let h { name = l; args = xs; fargs = ys; body = e; ret = t } =

@@ -13,7 +13,11 @@ let rec target' src (dest, t) = function
     let c1, rs1 = target src (dest, t) e1 in
     let c2, rs2 = target src (dest, t) e2 in
     c1 && c2, rs1 @ rs2
-  (*| IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->*)
+  | IfFEq(_, _, _, e1, e2) | IfFLE(_, _, _, e1, e2) ->
+    let c1, rs1 = target src (dest, t) e1 in
+    let c2, rs2 = target src (dest, t) e2 in
+    c1 && c2, rs1 @ rs2
+  (*| IfGE(_, _, e1, e2) ->*)
   (*let c1, rs1 = target src (dest, t) e1 in*)
   (*let c2, rs2 = target src (dest, t) e2 in*)
   (*c1 && c2, rs1 @ rs2*)
@@ -42,11 +46,11 @@ let rec source t = function
   | Ans(exp) -> source' t exp
   | Let(_, _, e) -> source t e
 and source' t = function
-  | Mov(x) | Neg(x) | Add(x, C _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]
-  | Add(x, V y) | FAddD(x, y) | FMulD(x, y) -> [x; y]
-  | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) ->
+  | Mov(x) | Neg(x) | AddI(x, _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]
+  | Add(x, y) | FAddD(x, y) | FMulD(x, y) -> [x; y]
+  | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfFEq(_, _, _, e1, e2) | IfFLE(_, _, _, e1, e2) ->
     source t e1 @ source t e2
-  (*| IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->*)
+  (*| IfGE(_, _, e1, e2) ->*)
   (*source t e1 @ source t e2*)
   | CallCls _ | CallDir _ -> (match t with Type.Unit -> [] | Type.Float -> [fregs.(0)] | _ -> [regs.(0)])
   | _ -> []
@@ -138,7 +142,8 @@ and g' dest cont regenv = function
   (*| Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
-  | Add(x, y') -> (Ans(Add(find x Type.Int regenv, find' y' regenv)), regenv)
+  | Add(x, y) -> (Ans(Add(find x Type.Int regenv, find y Type.Int regenv)), regenv)
+  | AddI(x, i) -> (Ans(AddI(find x Type.Int regenv, i)), regenv)
   | Sub(x, y) -> (Ans(Sub(find x Type.Int regenv, find y Type.Int regenv)), regenv)
   | Ld(x, y', i) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, i)), regenv)
   | St(x, y, z', i) -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv, i)), regenv)
@@ -155,8 +160,8 @@ and g' dest cont regenv = function
   | IfLE(x, y, e1, e2) as exp ->
     g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2
   (*| IfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2*)
-  (*| IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2*)
-  (*| IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2*)
+  | IfFEq(x, y, cmp, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, cmp, e1', e2')) e1 e2
+  | IfFLE(x, y, cmp, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, cmp, e1', e2')) e1 e2
   | CallCls(x, ys, zs, reg_cl_buf) as exp ->
     if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)

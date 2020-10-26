@@ -8,8 +8,9 @@ and exp =
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
-  | Add of  Id.t * id_or_imm
-  | Sub of  Id.t * Id.t
+  | Add of Id.t * Id.t
+  | AddI of Id.t * int
+  | Sub of Id.t * Id.t
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
   | FMovD of Id.t
@@ -25,8 +26,8 @@ and exp =
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
   (*| IfGE of Id.t * id_or_imm * t * t*)
-  (*| IfFEq of Id.t * Id.t * t * t*)
-  (*| IfFLE of Id.t * Id.t * t * t*)
+  | IfFEq of Id.t * Id.t * Id.t * t * t
+  | IfFLE of Id.t * Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
   | CallCls of Id.t * Id.t list * Id.t list * Id.t
   | CallDir of Id.l * Id.t list * Id.t list

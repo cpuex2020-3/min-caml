@@ -8,10 +8,13 @@ and exp =
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * id_or_imm (* TODO: add AddI to separate imm *)
+  | Add of Id.t * Id.t
+  | AddI of Id.t * int
   | Sub of Id.t * Id.t
+  (* TODO: handle with id instead of id_or_imm. handling in emit can cause error. e.g. register dependencies *)
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
+  (* TODO: change the name. ex) FMovD -> FMov *)
   | FMovD of Id.t
   | FNegD of Id.t
   | FAddD of  Id.t * Id.t
@@ -23,6 +26,8 @@ and exp =
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
+  | IfFEq of Id.t * Id.t * Id.t * t * t
+  | IfFLE of Id.t * Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
   | CallCls of Id.t * Id.t list * Id.t list * Id.t
   | CallDir of Id.l * Id.t list * Id.t list
@@ -34,6 +39,7 @@ type prog = Prog of (Id.l * float) list * fundef list * t
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
+let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let regs = (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
   [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7" |]
 let fregs = Array.init 8 (fun i -> Printf.sprintf "fa%d" i)
@@ -57,14 +63,14 @@ let rec remove_and_uniq xs = function
   | x :: ys -> x :: remove_and_uniq (S.add x xs) ys
 
 (* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
-let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Set (_) | Restore(_) -> []
   | SetL(_) -> []
   (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
   | FMovD(x) | FNegD(x) | Save(x, _) -> [x]
-  | Add(x, y') -> x :: fv_id_or_imm y'
+  | Add(x, y) -> x :: [y]
+  | AddI(x, i) -> [x]
   | Sub(x, y) -> x :: [y]
   | Ld(x, y', _) -> x :: fv_id_or_imm y'
   | LdDF(x, y', _) -> x :: fv_id_or_imm y'
@@ -73,7 +79,7 @@ let rec fv_exp = function
   | FAddD(x, y) | FSubD(x, y) | FMulD(x, y) | FDivD(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
-  (*| IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
+  | IfFEq(x, y, cmp, e1, e2) | IfFLE(x, y, cmp, e1, e2) -> x :: y :: cmp :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
   | CallCls(x, ys, zs, reg_cl_buf) -> x :: reg_cl_buf :: ys @ zs
   | CallDir(_, ys, zs) -> ys @ zs
 and fv = function

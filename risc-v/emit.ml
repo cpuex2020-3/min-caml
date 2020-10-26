@@ -49,8 +49,17 @@ let rec g oc = function
     g oc (dest, e)
 and g' oc = function
   | NonTail(_), Nop -> ()
-  (*| NonTail(x), Set(i) -> Printf.fprintf oc "\taddi\t%s, zero, %d\n" x i TODO: handle large numbers*)
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
+  | NonTail(x), Set(i) ->
+    if i >= (1 lsl 12) then
+      (let upper_20 = i asr 12 in
+       let lower_12 = i land 0xfff in
+       if lower_12 land 0x800 <> 0 then
+         Printf.fprintf oc "\tlui\t%s, %d\n" x (upper_20 + 1)
+       else
+         Printf.fprintf oc "\tlui\t%s, %d\n" x upper_20;
+       Printf.fprintf oc "\taddi\t%s, %s, %d\n" x x lower_12)
+    else
+      Printf.fprintf oc "\taddi\t%s, zero, %d\n" x i
   | NonTail(x), SetL(L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | NonTail(x), Mov(y) ->
     if x <> y then
@@ -58,30 +67,34 @@ and g' oc = function
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
     Printf.fprintf oc "\tsub\t%s, zero, %s\n" x x
-  | NonTail(x), Add(y, z') ->
-    if V(x) = z' then Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
-    else (
-      match z' with
-      | V(z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
-      | C(z) -> Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (string_of_int z)
-    )
+  | NonTail(x), Add(y, z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
+  | NonTail(x), AddI(y, i) -> Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y i
   | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(x), Ld(y, V(z), i) ->
+    if i = 4 then
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
+    else if i = 8 then
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
+    else
+      raise (Failure "Unhandled size in Ld; emit.ml");
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" x y
   | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (j * i) y
-  | NonTail(_), St(x, y, V(t), _) ->
-    Printf.fprintf oc "\tli\t%s, 0\n" t;
-    Printf.fprintf oc "\tsw\t%s, %s, %s\n" x y t
+  | NonTail(_), St(x, y, V(z), i) ->
+    if i = 4 then
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
+    else if i = 8 then
+      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
+    else
+      raise (Failure "Unhandled size in Ld; emit.ml");
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
+    Printf.fprintf oc "\tsw\t%s, 0(%s)\n" x y
   | NonTail(x), FMovD(y) ->
     if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y
   | NonTail(x), FNegD(y) ->
-    if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
-    Printf.fprintf oc "\txorpd\tmin_caml_fnegd, %s\n" x
-  | NonTail(x), FAddD(y, z) ->
-    if x = z then
-      Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y x
-    else
-      (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
-       Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x x z)
+    Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y y;
+  | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y z
   | NonTail(x), FSubD(y, z) ->
     (*if x = z then (* [XXX] ugly *)*)
     (*let ss = stacksize () in*)
@@ -89,14 +102,8 @@ and g' oc = function
     (*if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;*)
     (*Printf.fprintf oc "\tfsub.s\t%d(%s), %s\n" ss reg_sp x*)
     (*else*)
-    (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
-     Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x x z)
-  | NonTail(x), FMulD(y, z) ->
-    if x = z then
-      Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y x
-    else
-      (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
-       Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x x z)
+    Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
+  | NonTail(x), FMulD(y, z) -> Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y z
   | NonTail(x), FDivD(y, z) ->
     (*if x = z then (* [XXX] ugly *)*)
     (*let ss = stacksize () in*)
@@ -104,11 +111,26 @@ and g' oc = function
     (*if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;*)
     (*Printf.fprintf oc "\tfdiv.s\t%d(%s), %s\n" ss reg_sp x*)
     (*else*)
-    (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
-     Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x x z)
-  | NonTail(x), LdDF(y, V(z), i) -> Printf.fprintf oc "\tflw\t%s, (%s,%s,%d)\n" x y z i
+    Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x y z
+  | NonTail(x), LdDF(y, V(z), i) ->
+    if i = 4 then
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
+    else if i = 8 then
+      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
+    else
+      raise (Failure "Unhandled size in LdDF; emit.ml");
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
+    Printf.fprintf oc "\tflw\t%s, 0(%s)\n" x y
   | NonTail(x), LdDF(y, C(j), i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (j * i) y
-  | NonTail(_), StDF(x, y, V(z), i) -> Printf.fprintf oc "\tfsw\t%s, (%s,%s,%d)\n" x y z i
+  | NonTail(_), StDF(x, y, V(z), i) ->
+    if i = 4 then
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
+    else if i = 8 then
+      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
+    else
+      raise (Failure "Unhandled size in StDF; emit.ml");
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
+    Printf.fprintf oc "\tfsw\t%s, 0(%s)\n" x y
   | NonTail(_), StDF(x, y, C(j), i) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
@@ -125,7 +147,7 @@ and g' oc = function
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
+  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
@@ -141,10 +163,18 @@ and g' oc = function
     g'_tail_if oc x y e1 e2 "be" "bne"
   | Tail, IfLE(x, y, e1, e2) ->
     g'_tail_if oc y x e1 e2 "bge" "blt"
+  | Tail, IfFEq(x, y, cmp, e1, e2) ->
+    g'_tail_float_if oc x y cmp e1 e2 "feq.s"
+  | Tail, IfFLE(x, y, cmp, e1, e2) ->
+    g'_tail_float_if oc x y cmp e1 e2 "fle.s"
   | NonTail(z), IfEq(x, y, e1, e2) ->
     g'_non_tail_if oc (NonTail(z)) x y e1 e2 "be" "bne"
   | NonTail(z), IfLE(x, y, e1, e2) ->
     g'_non_tail_if oc (NonTail(z)) y x e1 e2 "bge" "blt"
+  | NonTail(z), IfFEq(x, y, cmp, e1, e2) ->
+    g'_non_tail_float_if oc (NonTail(z)) x y cmp e1 e2 "feq.s"
+  | NonTail(z), IfFLE(x, y, cmp, e1, e2) ->
+    g'_non_tail_float_if oc (NonTail(z)) y x cmp e1 e2 "fle.s"
   | Tail, CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
@@ -185,10 +215,34 @@ and g'_tail_if oc x y e1 e2 b bn =
   Printf.fprintf oc "%s:\n" b_else;
   stackset := stackset_back;
   g oc (Tail, e2)
+and g'_tail_float_if oc x y cmp e1 e2 b =
+  let b_else = Id.genid (b ^ "_else") in
+  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b cmp x y;
+  Printf.fprintf oc "\tbne\t%s, zero, %s\n" cmp b_else;
+  let stackset_back = !stackset in
+  g oc (Tail, e1);
+  Printf.fprintf oc "%s:\n" b_else;
+  stackset := stackset_back;
+  g oc (Tail, e2)
 and g'_non_tail_if oc dest x y e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
+  let stackset_back = !stackset in
+  g oc (dest, e1);
+  let stackset1 = !stackset in
+  Printf.fprintf oc "\tj\t%s\n" b_cont;
+  Printf.fprintf oc "%s:\n" b_else;
+  stackset := stackset_back;
+  g oc (dest, e2);
+  Printf.fprintf oc "%s:\n" b_cont;
+  let stackset2 = !stackset in
+  stackset := S.inter stackset1 stackset2
+and g'_non_tail_float_if oc dest x y cmp e1 e2 b =
+  let b_else = Id.genid (b ^ "_else") in
+  let b_cont = Id.genid (b ^ "_cont") in
+  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b cmp x y;
+  Printf.fprintf oc "\tbne\t%s, zero, %s\n" cmp b_else;
   let stackset_back = !stackset in
   g oc (dest, e1);
   let stackset1 = !stackset in

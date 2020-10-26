@@ -48,7 +48,7 @@ let rec g env = function
     let x = Id.genid "l" in
     Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0), 1)))
   | Closure.Neg(x) -> Ans(Neg(x))
-  | Closure.Add(x, y) -> Ans(Add(x, V(y)))
+  | Closure.Add(x, y) -> Ans(Add(x, y))
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
   | Closure.FNeg(x) -> Ans(FNegD(x))
   | Closure.FAdd(x, y) -> Ans(FAddD(x, y))
@@ -58,12 +58,16 @@ let rec g env = function
   | Closure.IfEq(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2))
-     (*| Type.Float -> Ans(IfFEq(x, y, g env e1, g env e2))*)
+     | Type.Float ->
+       let cmp = Id.genid "l" in
+       Ans(IfFEq(x, y, cmp, g env e1, g env e2))
      | _ -> failwith "equality supported only for bool, int, and float")
   | Closure.IfLE(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfLE(x, y, g env e1, g env e2))
-     (*| Type.Float -> Ans(IfFLE(x, y, g env e1, g env e2))*)
+     | Type.Float ->
+       let cmp = Id.genid "l" in
+       Ans(IfFEq(x, y, cmp, g env e1, g env e2))
      | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2) ->
     let e1' = g env e1 in
@@ -72,7 +76,7 @@ let rec g env = function
   | Closure.Var(x) ->
     (match M.find x env with
      | Type.Unit -> Ans(Nop)
-     (*| Type.Float -> Ans(FMovD(x))*)
+     | Type.Float -> Ans(FMovD(x))
      | _ -> Ans(Mov(x)))
   | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (*(caml2html: virtual_makecls) *)
     let e2' = g (M.add x t env) e2 in
@@ -83,7 +87,7 @@ let rec g env = function
         (fun y offset store_fv -> seq(StDF(y, x, C(offset), 1), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset), 1), store_fv)) in
     Let((x, t), Mov(reg_hp),
-        Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),
+        Let((reg_hp, Type.Int), AddI(reg_hp, align offset), (* TODO: if imm was bigger than 1 << 12... *)
             let z = Id.genid "l" in
             Let((z, Type.Int), SetL(l),
                 seq(St(z, x, C(0), 1),
@@ -105,7 +109,7 @@ let rec g env = function
         (fun x offset store -> seq(StDF(x, y, C(offset), 1), store))
         (fun x _ offset store -> seq(St(x, y, C(offset), 1), store)) in
     Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
-        Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),
+        Let((reg_hp, Type.Int), AddI(reg_hp, align offset), (* TODO: if imm was bigger than 1 << 12... *)
             store))
   | Closure.LetTuple(xts, y, e2) ->
     let s = Closure.fv e2 in
@@ -123,13 +127,15 @@ let rec g env = function
   | Closure.Get(x, y) ->
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
-     (*| Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 8))*)
+     (* TODO: really 8? maybe 4 on single precision. need to fix libmincaml.s too *)
+     | Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 8))
      | Type.Array(_) -> Ans(Ld(x, V(y), 4))
      | _ -> assert false)
   | Closure.Put(x, y, z) ->
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
-     (*| Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))*)
+     (* TODO: really 8? maybe 4 on single precision. need to fix libmincaml.s too *)
+     | Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))
      | Type.Array(_) -> Ans(St(z, x, V(y), 4))
      | _ -> assert false)
   | _ -> raise (Failure "Unhandled in virtual.ml!")

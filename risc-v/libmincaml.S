@@ -75,12 +75,42 @@ create_array_cont:
 	sw	a1, 0(a2)
 	j	create_array_loop
 
+	.globl min_caml_create_float_array
+min_caml_create_float_array:
+	addi	sp, sp, -12
+	sw	s0, 8(sp)
+	mv	s0, sp
+	sw	a3, 4(sp)
+	sw	a2,	0(sp)
+	mv	a3, a0
+	mv	a0, t0
+	mv	a2, a3
+	slli	a2, a2, 3
+	add	t0, t0, a2
+create_float_array_loop:
+	bne	a3, zero, create_float_array_cont
+create_float_array_exit:
+	lw	a2, 0(sp)
+	lw	a3, 4(sp)
+	mv	sp, s0
+	lw	s0, 8(sp)
+	addi	sp, sp, 12
+	ret
+create_float_array_cont:
+	addi	a3, a3, -1
+	slli	t1, a3, 3
+	add	a2, t1, a0
+	fsw	fa0, 0(a2)
+	j	create_float_array_loop
+	ret
+
 	.globl min_caml_sqrt
 min_caml_sqrt:
 	fsqrt.s	fa0, fa0
 	ret
 	.globl min_caml_abs_float
 min_caml_abs_float:
+	fsgnjx.s	fa0, fa0, fa0
 	ret
 	.globl min_caml_sin
 min_caml_sin:
@@ -92,6 +122,8 @@ min_caml_cos:
 min_caml_float_of_int:
 	fcvt.s.w	fa0, a0
 	ret
+	.globl min_caml_truncate
+min_caml_truncate:
 	.globl min_caml_int_of_float
 min_caml_int_of_float:
 	fcvt.w.s	a0, fa0
@@ -110,12 +142,6 @@ float_1:
 	.long	0x0
 	.long	0x3ff00000
 .balign 16
-.globl min_caml_fnegd
-min_caml_fnegd:
-	.long	0
-	.long	0x80000000
-	.long	0
-	.long	0
 .globl min_caml_hp
 min_caml_hp:
 	.long	0x0

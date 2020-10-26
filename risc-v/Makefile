@@ -27,13 +27,13 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-SUB_TESTS = spill2
+#SUB_TESTS = matmul
 
 # funcomp and cls-reg-bug works, but somehow print_int doesn't work. check with `echo $?`.
-#SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
-#join-stack join-stack2 join-stack3 \
-#join-reg join-reg2 \
-#adder cls-rec cls-bug \
+SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
+join-stack join-stack2 join-stack3 \
+join-reg join-reg2 \
+adder cls-rec cls-bug \
 #funcomp cls-reg-bug
 
 sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
@@ -57,8 +57,9 @@ test/%.res: test/%
 test/%.ans: test/%.ml
 	ocaml $< >> $@
 test/%.cmp: test/%.res test/%.ans
-	sed -i 1d $<
+	tail -n +2 $< > tmp && mv tmp $<
 	diff $^ > $@
+	#sed -i 1d $<
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
