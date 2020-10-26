@@ -6,9 +6,9 @@ let rec target' src (dest, t) = function
     assert (t <> Type.Unit);
     assert (t <> Type.Float);
     false, [dest]
-  (*| FMovD(x) when x = src && is_reg dest ->*)
-  (*assert (t = Type.Float);*)
-  (*false, [dest]*)
+  | FMovD(x) when x = src && is_reg dest ->
+    assert (t = Type.Float);
+    false, [dest]
   | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) ->
     let c1, rs1 = target src (dest, t) e1 in
     let c2, rs2 = target src (dest, t) e2 in
@@ -42,11 +42,8 @@ let rec source t = function
   | Ans(exp) -> source' t exp
   | Let(_, _, e) -> source t e
 and source' t = function
-  | Mov(x) | Neg(x) -> [x]
-  (*| FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]*)
-  | Add(x, y, C _) | Sub(x, y, _) -> [x; y]
-  | Add(x, y, V z) -> [x; y; z]
-  (*| FAddD(x, y, z) | FMulD(x, y, z) -> [x; y; z]*)
+  | Mov(x) | Neg(x) | Add(x, C _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]
+  | Add(x, V y) | FAddD(x, y) | FMulD(x, y) -> [x; y]
   | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) ->
     source t e1 @ source t e2
   (*| IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->*)
@@ -141,16 +138,16 @@ and g' dest cont regenv = function
   (*| Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
-  | Add(x, y', z) -> (Ans(Add(find x Type.Int regenv, find y' Type.Int regenv, find' z regenv)), regenv)
-  | Sub(x, y', z) -> (Ans(Sub(find x Type.Int regenv, find y' Type.Int regenv, find z Type.Int regenv)), regenv)
+  | Add(x, y') -> (Ans(Add(find x Type.Int regenv, find' y' regenv)), regenv)
+  | Sub(x, y) -> (Ans(Sub(find x Type.Int regenv, find y Type.Int regenv)), regenv)
   | Ld(x, y', i) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, i)), regenv)
   | St(x, y, z', i) -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv, i)), regenv)
-  (*| FMovD(x) -> (Ans(FMovD(find x Type.Float regenv)), regenv)*)
-  (*| FNegD(x) -> (Ans(FNegD(find x Type.Float regenv)), regenv)*)
-  (*| FAddD(x, y) -> (Ans(FAddD(find x Type.Float regenv, find y Type.Float regenv)), regenv)*)
-  (*| FSubD(x, y) -> (Ans(FSubD(find x Type.Float regenv, find y Type.Float regenv)), regenv)*)
-  (*| FMulD(x, y) -> (Ans(FMulD(find x Type.Float regenv, find y Type.Float regenv)), regenv)*)
-  (*| FDivD(x, y) -> (Ans(FDivD(find x Type.Float regenv, find y Type.Float regenv)), regenv)*)
+  | FMovD(x) -> (Ans(FMovD(find x Type.Float regenv)), regenv)
+  | FNegD(x) -> (Ans(FNegD(find x Type.Float regenv)), regenv)
+  | FAddD(x, y) -> (Ans(FAddD(find x Type.Float regenv, find y Type.Float regenv)), regenv)
+  | FSubD(x, y) -> (Ans(FSubD(find x Type.Float regenv, find y Type.Float regenv)), regenv)
+  | FMulD(x, y) -> (Ans(FMulD(find x Type.Float regenv, find y Type.Float regenv)), regenv)
+  | FDivD(x, y) -> (Ans(FDivD(find x Type.Float regenv, find y Type.Float regenv)), regenv)
   | LdDF(x, y', i) -> (Ans(LdDF(find x Type.Int regenv, find' y' regenv, i)), regenv)
   | StDF(x, y, z', i) -> (Ans(StDF(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv, i)), regenv)
   | IfEq(x, y, e1, e2) as exp ->

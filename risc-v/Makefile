@@ -27,7 +27,7 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-SUB_TESTS = non-tail-if2
+SUB_TESTS = float
 
 # funcomp and cls-reg-bug works, but somehow print_int doesn't work. check with `echo $?`.
 #SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \

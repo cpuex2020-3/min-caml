@@ -61,34 +61,79 @@ and g' oc = function
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
     Printf.fprintf oc "\tsub\t%s, zero, %s\n" x x
-  | NonTail(x), Add(_, y, z') ->
+  | NonTail(x), Add(y, z') ->
     if V(x) = z' then Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y x
     else (
       match z' with
       | V(z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
       | C(z) -> Printf.fprintf oc "\taddi\t%s, %s, %s\n" x y (string_of_int z)
     )
-  | NonTail(x), Sub(_, y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
+  | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), St(x, y, V(t), _) ->
     Printf.fprintf oc "\tli\t%s, 0\n" t;
     Printf.fprintf oc "\tsw\t%s, %s, %s\n" x y t
+  | NonTail(x), FMovD(y) ->
+    if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y
+  | NonTail(x), FNegD(y) ->
+    if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
+    Printf.fprintf oc "\txorpd\tmin_caml_fnegd, %s\n" x
+  | NonTail(x), FAddD(y, z) ->
+    if x = z then
+      Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y x
+    else
+      (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
+       Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x x z)
+  | NonTail(x), FSubD(y, z) ->
+    (*if x = z then (* [XXX] ugly *)*)
+    (*let ss = stacksize () in*)
+    (*Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" z ss reg_sp;*)
+    (*if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;*)
+    (*Printf.fprintf oc "\tfsub.s\t%d(%s), %s\n" ss reg_sp x*)
+    (*else*)
+    (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
+     Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x x z)
+  | NonTail(x), FMulD(y, z) ->
+    if x = z then
+      Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y x
+    else
+      (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
+       Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x x z)
+  | NonTail(x), FDivD(y, z) ->
+    (*if x = z then (* [XXX] ugly *)*)
+    (*let ss = stacksize () in*)
+    (*Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" z ss reg_sp;*)
+    (*if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;*)
+    (*Printf.fprintf oc "\tfdiv.s\t%d(%s), %s\n" ss reg_sp x*)
+    (*else*)
+    (if x <> y then Printf.fprintf oc "\tfmv.s\t%s, %s\n" x y;
+     Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x x z)
+  | NonTail(x), LdDF(y, V(z), i) -> Printf.fprintf oc "\tflw\t%s, (%s,%s,%d)\n" x y z i
+  | NonTail(x), LdDF(y, C(j), i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(_), StDF(x, y, V(z), i) -> Printf.fprintf oc "\tfsw\t%s, (%s,%s,%d)\n" x y z i
+  | NonTail(_), StDF(x, y, C(j), i) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
     Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (offset y) reg_sp
+  | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
+    savef y;
+    Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   | NonTail(x), Restore(y) when List.mem x allregs ->
     Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(x), Restore(y) ->
     assert (List.mem x allfregs);
-    Printf.fprintf oc "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
+    Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (offset y) reg_sp
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
-    Printf.fprintf oc "\tret\n"
-  | Tail, (Set _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
+    Printf.fprintf oc "\tret\n";
+  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
-    Printf.fprintf oc "\tret\n"
+    Printf.fprintf oc "\tret\n";
+  | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
+    g' oc (NonTail(fregs.(0)), exp);
+    Printf.fprintf oc "\tret\n";
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' oc (NonTail(regs.(0)), exp)
@@ -135,7 +180,6 @@ and g' oc = function
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tmovsd\t%s, %s\n" a fregs.(0)
-  | _ -> raise (Failure "Unhandled in emit!")
 and g'_tail_if oc x y e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;

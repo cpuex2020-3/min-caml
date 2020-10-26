@@ -36,29 +36,25 @@ let hp_offset = ref 0
 let rec g env = function
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Set(i))
-  (*
-   *| Closure.Float(d) ->
-   *let l =
-   *try
-   *)
-    (*
-     *    let (l, _) = List.find (fun (_, d') -> d = d') !data in
-     *    l
-     *  with Not_found ->
-     *    let l = Id.L(Id.genid "l") in
-     *    data := (l, d) :: !data;
-     *    l in
-     *let x = Id.genid "l" in
-     *Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0), 1)))
-     *)
+  | Closure.Float(d) ->
+    let l =
+      try
+        let (l, _) = List.find (fun (_, d') -> d = d') !data in
+        l
+      with Not_found ->
+        let l = Id.L(Id.genid "l") in
+        data := (l, d) :: !data;
+        l in
+    let x = Id.genid "l" in
+    Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0), 1)))
   | Closure.Neg(x) -> Ans(Neg(x))
-  | Closure.Add(x, y) -> Ans(Add(x, x, V(y))) (* TODO: destination op is the same as the lhs for now *)
-  | Closure.Sub(x, y) -> Ans(Sub(x, x, y)) (* TODO: destination op is the same as the lhs for now *)
-  (*| Closure.FNeg(x) -> Ans(FNegD(x))*)
-  (*| Closure.FAdd(x, y) -> Ans(FAddD(x, y))*)
-  (*| Closure.FSub(x, y) -> Ans(FSubD(x, y))*)
-  (*| Closure.FMul(x, y) -> Ans(FMulD(x, y))*)
-  (*| Closure.FDiv(x, y) -> Ans(FDivD(x, y))*)
+  | Closure.Add(x, y) -> Ans(Add(x, V(y)))
+  | Closure.Sub(x, y) -> Ans(Sub(x, y))
+  | Closure.FNeg(x) -> Ans(FNegD(x))
+  | Closure.FAdd(x, y) -> Ans(FAddD(x, y))
+  | Closure.FSub(x, y) -> Ans(FSubD(x, y))
+  | Closure.FMul(x, y) -> Ans(FMulD(x, y))
+  | Closure.FDiv(x, y) -> Ans(FDivD(x, y))
   | Closure.IfEq(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2))
@@ -87,7 +83,7 @@ let rec g env = function
         (fun y offset store_fv -> seq(StDF(y, x, C(offset), 1), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset), 1), store_fv)) in
     Let((x, t), Mov(reg_hp),
-        Let((reg_hp, Type.Int), Add(reg_hp, reg_hp, C(align offset)),
+        Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),
             let z = Id.genid "l" in
             Let((z, Type.Int), SetL(l),
                 seq(St(z, x, C(0), 1),
@@ -109,7 +105,7 @@ let rec g env = function
         (fun x offset store -> seq(StDF(x, y, C(offset), 1), store))
         (fun x _ offset store -> seq(St(x, y, C(offset), 1), store)) in
     Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
-        Let((reg_hp, Type.Int), Add(reg_hp, reg_hp, C(align offset)),
+        Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),
             store))
   | Closure.LetTuple(xts, y, e2) ->
     let s = Closure.fv e2 in
@@ -136,7 +132,7 @@ let rec g env = function
      (*| Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))*)
      | Type.Array(_) -> Ans(St(z, x, V(y), 4))
      | _ -> assert false)
-  | _ -> raise (Failure "Unhandled!")
+  | _ -> raise (Failure "Unhandled in virtual.ml!")
 (*| Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))*)
 
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =

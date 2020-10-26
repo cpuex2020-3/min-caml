@@ -8,10 +8,16 @@ and exp =
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t * id_or_imm
-  | Sub of Id.t * Id.t * Id.t
+  | Add of Id.t * id_or_imm (* TODO: add AddI to separate imm *)
+  | Sub of Id.t * Id.t
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
+  | FMovD of Id.t
+  | FNegD of Id.t
+  | FAddD of  Id.t * Id.t
+  | FSubD of  Id.t * Id.t
+  | FMulD of  Id.t * Id.t
+  | FDivD of  Id.t * Id.t
   | LdDF of Id.t * id_or_imm * int
   | StDF of Id.t * Id.t * id_or_imm * int
   (* virtual instructions *)
@@ -57,14 +63,14 @@ let rec fv_exp = function
   | SetL(_) -> []
   (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
-  (*| FMovD(x) | FNegD(x) | Save(x, _) -> [x]*)
-  | Add(x, y', z) -> x :: y' :: fv_id_or_imm z
-  | Sub(x, y, z) -> x :: y :: [z]
+  | FMovD(x) | FNegD(x) | Save(x, _) -> [x]
+  | Add(x, y') -> x :: fv_id_or_imm y'
+  | Sub(x, y) -> x :: [y]
   | Ld(x, y', _) -> x :: fv_id_or_imm y'
   | LdDF(x, y', _) -> x :: fv_id_or_imm y'
   | St(x, y, z', _) -> x :: y :: fv_id_or_imm z'
-  (*| StDF(x, y, z', _) -> x :: y :: fv_id_or_imm z'*)
-  (*| FAddD(x, y) | FSubD(x, y) | FMulD(x, y) | FDivD(x, y) -> [x; y]*)
+  | StDF(x, y, z', _) -> x :: y :: fv_id_or_imm z'
+  | FAddD(x, y) | FSubD(x, y) | FMulD(x, y) | FDivD(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
   (*| IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)

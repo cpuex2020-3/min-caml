@@ -1,4 +1,5 @@
 .text
+.balign 8
 .globl min_caml_print_newline
 min_caml_print_newline:
 	addi	sp, sp, -8
@@ -21,20 +22,32 @@ newline.1:
 	lw	s0, 4(sp)
 	addi	sp, sp, 8
 	ret
-.globl min_caml_print_int
+
+	.section	.rodata
+	.align	2
+.LC0:
+	.string	"%d"
+	.text
+	.align	2
+	.globl	min_caml_print_int
+	.type	min_caml_print_int, @function
 min_caml_print_int:
-	addi	sp, sp, -8
-	sw	s0, 4(sp)
-	mv	s0, sp
-	mv	a1, a0
-	la	a0, format_int
-	sw	ra, 0(sp)
+	addi	sp,sp,-32
+	sw	ra,28(sp)
+	sw	s0,24(sp)
+	addi	s0,sp,32
+	sw	a0,-20(s0)
+	lw	a1,-20(s0)
+	lui	a5,%hi(.LC0)
+	addi	a0,a5,%lo(.LC0)
 	call	printf
-	lw	ra, 0(sp)
-	mv	sp, s0
-	lw	s0, 4(sp)
-	addi	sp, sp, 8
-	ret
+	nop
+	lw	ra,28(sp)
+	lw	s0,24(sp)
+	addi	sp,sp,32
+	jr	ra
+	.size	min_caml_print_int, .-min_caml_print_int
+
 .globl min_caml_create_array
 min_caml_create_array:
 	addi	sp, sp, -12
@@ -64,7 +77,7 @@ create_array_cont:
 	j	create_array_loop
 .data
 format_int:
-	.asciz	"%d"
+	.string	"%d"
 format_float:
 	.asciz	"%lf"
 .balign 8

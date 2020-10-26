@@ -8,16 +8,16 @@ and exp =
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t * id_or_imm
-  | Sub of Id.t * Id.t * Id.t
+  | Add of  Id.t * id_or_imm
+  | Sub of  Id.t * Id.t
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
-  (*| FMovD of Id.t*)
-  (*| FNegD of Id.t*)
-  (*| FAddD of Id.t * Id.t*)
-  (*| FSubD of Id.t * Id.t*)
-  (*| FMulD of Id.t * Id.t*)
-  (*| FDivD of Id.t * Id.t*)
+  | FMovD of Id.t
+  | FNegD of Id.t
+  | FAddD of Id.t * Id.t
+  | FSubD of Id.t * Id.t
+  | FMulD of Id.t * Id.t
+  | FDivD of Id.t * Id.t
   | LdDF of Id.t * id_or_imm * int
   | StDF of Id.t * Id.t * id_or_imm * int
   (*| Comment of string*)
