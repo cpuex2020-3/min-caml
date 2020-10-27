@@ -146,19 +146,19 @@ and g' oc = function
     Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (offset y) reg_sp
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
-    Printf.fprintf oc "\tret\n";
+    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
-    Printf.fprintf oc "\tret\n";
+    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
     g' oc (NonTail(fregs.(0)), exp);
-    Printf.fprintf oc "\tret\n";
+    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' oc (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
-    Printf.fprintf oc "\tret\n"
+    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra
   | Tail, IfEq(x, y, e1, e2) ->
     g'_tail_if oc x y e1 e2 "be" "bne"
   | Tail, IfLE(x, y, e1, e2) ->
@@ -314,4 +314,4 @@ let f oc (Prog(data, fundefs, e)) =
     fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
   ) (List.rev callee_saved_regs);
   Printf.fprintf oc "\taddi\tsp, sp, 52\n";
-  Printf.fprintf oc "\tret\n";
+  Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
