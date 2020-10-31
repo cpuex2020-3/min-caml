@@ -49,17 +49,7 @@ let rec g oc = function
     g oc (dest, e)
 and g' oc = function
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) ->
-    if i >= (1 lsl 12) then
-      (let upper_20 = i asr 12 in
-       let lower_12 = i land 0xfff in
-       if lower_12 land 0x800 <> 0 then
-         Printf.fprintf oc "\tlui\t%s, %d\n" x (upper_20 + 1)
-       else
-         Printf.fprintf oc "\tlui\t%s, %d\n" x upper_20;
-       Printf.fprintf oc "\taddi\t%s, %s, %d\n" x x lower_12)
-    else
-      Printf.fprintf oc "\taddi\t%s, zero, %d\n" x i
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i (* for visibility, use li *)
   | NonTail(x), SetL(L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | NonTail(x), Mov(y) ->
     if x <> y then
@@ -146,19 +136,19 @@ and g' oc = function
     Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (offset y) reg_sp
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
-    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
+    Printf.fprintf oc "\tret\n";
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
-    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
+    Printf.fprintf oc "\tret\n";
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
     g' oc (NonTail(fregs.(0)), exp);
-    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
+    Printf.fprintf oc "\tret\n";
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' oc (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
-    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra
+    Printf.fprintf oc "\tret\n"
   | Tail, IfEq(x, y, e1, e2) ->
     g'_tail_if oc x y e1 e2 "be" "bne"
   | Tail, IfLE(x, y, e1, e2) ->
@@ -290,7 +280,6 @@ let f oc (Prog(data, fundefs, e)) =
   let callee_saved_regs_count = List.length callee_saved_regs in
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc ".data\n";
-  Printf.fprintf oc ".balign\t8\n";
   List.iter
     (fun (Id.L(x), d) ->
        Printf.fprintf oc "%s:\t# %f\n" x d;
@@ -308,10 +297,10 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;
+  (*Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;*)
   g oc (NonTail(regs.(0)), e);
   List.iteri (
     fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
   ) (List.rev callee_saved_regs);
   Printf.fprintf oc "\taddi\tsp, sp, 52\n";
-  Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_ra;
+  Printf.fprintf oc "\tret\n";
