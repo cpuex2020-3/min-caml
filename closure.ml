@@ -97,3 +97,85 @@ let f e =
   toplevel := [];
   let e' = g M.empty S.empty e in
   Prog(List.rev !toplevel, e')
+
+let rec print_n_tabs n =
+  if n = 0 then ()
+  else (Printf.printf " "; print_n_tabs (n-1))
+
+let rec print_t t depth =
+  print_n_tabs depth;
+  match t with
+  | Unit -> Printf.printf "UNIT"
+  | Int i -> Printf.printf "INT %d" i
+  | Float f -> Printf.printf "FLOAT %f" f
+  | Neg id -> Printf.printf "NEG %s" id
+  | Add (lhs, rhs) -> Printf.printf "ADD %s %s\n" lhs rhs
+  | Sub (lhs, rhs) -> Printf.printf "SUB %s %s\n" lhs rhs
+  | FNeg id -> Printf.printf "FNEG %s" id
+  | FAdd (lhs, rhs) -> Printf.printf "FADD %s %s\n" lhs rhs
+  | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
+  | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
+  | FDiv (lhs, rhs) -> Printf.printf "FDIV %s %s\n" lhs rhs
+  | IfEq (lhs, rhs, thn, els) -> (
+      Printf.printf "IF %s = %s\n" lhs rhs;
+      print_t thn (depth + 1);
+      print_newline();
+      print_t els (depth + 1);
+      print_newline();
+    )
+  | IfLE (lhs, rhs, thn, els) -> (
+      Printf.printf "IF %s <= %s\n" lhs rhs;
+      print_t thn (depth + 1);
+      print_newline();
+      print_t els (depth + 1);
+      print_newline();
+    )
+  | Let ((id, ty), t1, t2) -> (
+      Printf.printf "LET %s TYPE: %s\n" id (Type.str ty);
+      print_t t1 (depth + 1);
+      print_newline();
+      print_t t2 (depth + 1);
+      print_newline();
+    )
+  | Var (v) -> Printf.printf "VAR %s" v
+  | Tuple (li) -> (
+      Printf.printf "TUPLE [\n";
+      List.iter (fun arg -> (print_n_tabs (depth + 1); print_string arg; print_newline();)) li;
+      print_n_tabs depth;
+      Printf.printf "]\n";
+    )
+  | LetTuple (li, id, t) -> (
+      Printf.printf "LETTUPLE (\n";
+      List.iter (
+        fun arg -> (
+            let (id, ty) = arg in
+            print_n_tabs (depth + 1);
+            Printf.printf "ID: %s, TYPE: %s\n" id (Type.str ty);
+            print_newline();
+          )
+      ) li;
+      print_n_tabs depth;
+      Printf.printf ")\n";
+    )
+  | Get (t1, t2) -> Printf.printf "GET %s %s\n" t1 t2
+  | Put (t1, t2, t3) -> Printf.printf "PUT %s %s %s\n" t1 t2 t3
+  | ExtArray (t) -> let L(s) = t in Printf.printf "EXTARRAY %s\n" s
+  | MakeCls((id, ty), cl, z) -> Printf.printf "MAKECLS %s\n" id
+  | AppCls(id, args) ->
+    Printf.printf "APPCLS %s\n" id;
+    print_n_tabs (depth + 1);
+    Printf.printf "args:\n";
+    print_n_tabs (depth + 2);
+    List.iter (fun arg -> (Printf.printf "%s, " arg)) args;
+  | AppDir(l, args) ->
+    let L(s) = l in
+    Printf.printf "APPDIR %s\n" s;
+    print_n_tabs (depth + 1);
+    Printf.printf "args:\n";
+    print_n_tabs (depth + 2);
+    List.iter (fun arg -> (Printf.printf "%s, " arg)) args
+
+let rec print prog =
+  let Prog(fns, t) = prog in
+  List.iter (fun fn -> print_t fn.body 0) fns;
+  print_t t 0

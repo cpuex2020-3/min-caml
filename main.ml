@@ -20,14 +20,14 @@ let lexbuf outchan l =
   let kNormal = KNormal.f (Typing.f syntax) in
   (*print_string "\n** Output of KNormal.t **\n";*)
   (*KNormal.print kNormal 0;*)
+  let closure = Closure.f (iter !limit (Alpha.f kNormal)) in
+  let flatten = TupleFlatten.f closure in
+  print_string "\n** Output of Closure.t after tuple flattening **\n";
+  Closure.print flatten;
   Emit.f outchan
     (RegAlloc.f
        (Simm.f
-          (Virtual.f
-             (Closure.f
-                (iter !limit
-                   (Alpha.f
-                      kNormal))))))
+          (Virtual.f flatten)))
 
 let string s = lexbuf stdout (Lexing.from_string s)
 

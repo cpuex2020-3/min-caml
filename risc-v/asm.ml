@@ -40,8 +40,9 @@ let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
-let regs = (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
-  [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7" |]
+let caller_saved_regs = [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7" |]
+let callee_saved_regs = [| "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11" |]
+let regs = Array.append caller_saved_regs callee_saved_regs
 let fregs = Array.init 8 (fun i -> Printf.sprintf "fa%d" i)
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
