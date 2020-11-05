@@ -138,8 +138,7 @@ let rec g env = function
      | Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))
      | Type.Array(_) -> Ans(St(z, x, V(y), 4))
      | _ -> assert false)
-  | _ -> raise (Failure "Unhandled in virtual.ml!")
-(*| Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))*)
+  | Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
 
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =
   let (int, float) = separate yts in
