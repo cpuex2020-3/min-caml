@@ -22,6 +22,7 @@ let lexbuf outchan l =
   (*KNormal.print kNormal 0;*)
   let closure = Closure.f (iter !limit (Alpha.f kNormal)) in
   let flatten = TupleFlatten.f closure in
+  let flatten = closure in
   print_string "\n** Output of Closure.t after tuple flattening **\n";
   Closure.print flatten;
   Emit.f outchan
