@@ -23,8 +23,10 @@ let rec g tuple_env = function
      | _ ->
        Let((id, ty), g tuple_env t1, g tuple_env t2))
   | LetTuple(li, id, t) ->
-    let orig = List.assoc id tuple_env in
-    convert_let_tuple li orig
+    (try
+       let orig = List.assoc id tuple_env in
+       convert_let_tuple li orig
+     with Not_found -> LetTuple(li, id, g tuple_env t))
   | IfEq(id1, id2, t1, t2) -> IfEq(id1, id2, g tuple_env t1, g tuple_env t2)
   | IfLE(id1, id2, t1, t2) -> IfLE(id1, id2, g tuple_env t1, g tuple_env t2)
   | MakeCls(id, cl, t) -> MakeCls(id, cl, g tuple_env t)
