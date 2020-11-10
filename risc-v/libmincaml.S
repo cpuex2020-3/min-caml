@@ -1,6 +1,6 @@
-.text
-.balign 8
-.globl min_caml_print_newline
+	.text
+	.balign 8
+	.globl min_caml_print_newline
 min_caml_print_newline:
 	addi	sp, sp, -8
 	sw	s0, 4(sp)
@@ -47,7 +47,7 @@ min_caml_print_int:
 	jr	ra
 	.size	min_caml_print_int, .-min_caml_print_int
 
-.globl min_caml_create_array
+	.globl min_caml_create_array
 min_caml_create_array:
 	addi	sp, sp, -12
 	sw	s0, 8(sp)
@@ -129,19 +129,19 @@ min_caml_int_of_float:
 	fcvt.w.s	a0, fa0
 	ret
 
-.data
+	.data
 format_int:
 	.string	"%d"
 format_float:
 	.asciz	"%lf"
-.balign 8
+	.balign 8
 float_0:
 	.long	0x0
 	.long	0x0
 float_1:
 	.long	0x0
 	.long	0x3ff00000
-.balign 16
-.globl min_caml_hp
+	.balign 16
+	.globl min_caml_hp
 min_caml_hp:
 	.long	0x0

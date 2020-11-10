@@ -159,7 +159,7 @@ let rec print_t t depth =
     )
   | Get (t1, t2) -> Printf.printf "GET %s %s\n" t1 t2
   | Put (t1, t2, t3) -> Printf.printf "PUT %s %s %s\n" t1 t2 t3
-  | ExtArray (t) -> let L(s) = t in Printf.printf "EXTARRAY %s\n" s
+  | ExtArray (t) -> let Id.L(s) = t in Printf.printf "EXTARRAY %s\n" s
   | MakeCls((id, ty), cl, z) -> Printf.printf "MAKECLS %s\n" id
   | AppCls(id, args) ->
     Printf.printf "APPCLS %s\n" id;
@@ -168,7 +168,7 @@ let rec print_t t depth =
     print_n_tabs (depth + 2);
     List.iter (fun arg -> (Printf.printf "%s, " arg)) args;
   | AppDir(l, args) ->
-    let L(s) = l in
+    let Id.L(s) = l in
     Printf.printf "APPDIR %s\n" s;
     print_n_tabs (depth + 1);
     Printf.printf "args:\n";

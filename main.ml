@@ -4,10 +4,10 @@ let rec iter n e =
   Format.eprintf "iteration %d@." n;
   if n = 0 then e
   else
-    let cse = Cse.f e in
+    let e = Cse.f e in
     (*print_string "** After cse **\n";*)
     (*KNormal.print cse 0;*)
-    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f cse)))) in
+    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
     if e = e' then e else
       iter (n - 1) e'
 
@@ -21,7 +21,7 @@ let lexbuf outchan l =
   (*print_string "\n** Output of KNormal.t **\n";*)
   (*KNormal.print kNormal 0;*)
   let closure = Closure.f (iter !limit (Alpha.f kNormal)) in
-  let flatten = TupleFlatten.f closure in
+  (*let flatten = TupleFlatten.f closure in*)
   let flatten = closure in
   print_string "\n** Output of Closure.t after tuple flattening **\n";
   Closure.print flatten;

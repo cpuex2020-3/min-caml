@@ -50,7 +50,7 @@ let rec g oc = function
 and g' oc = function
   | NonTail(_), Nop -> ()
   | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i (* for visibility, use li *)
-  | NonTail(x), SetL(L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
+  | NonTail(x), SetL(Id.L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | NonTail(x), Mov(y) ->
     if x <> y then
       Printf.fprintf oc "\tmv\t%s, %s\n" x y
@@ -297,7 +297,7 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  (*Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;*)
+  Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;
   g oc (NonTail(regs.(0)), e);
   List.iteri (
     fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
