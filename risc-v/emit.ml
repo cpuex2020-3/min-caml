@@ -283,7 +283,7 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;
+  (*Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;*)
   g oc (NonTail(regs.(0)), e);
   List.iteri (
     fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
