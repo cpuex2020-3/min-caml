@@ -59,15 +59,13 @@ let rec g env = function
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2))
      | Type.Float ->
-       let cmp = Id.genid "l" in
-       Ans(IfFEq(x, y, cmp, g env e1, g env e2))
+       Ans(IfFEq(x, y, reg_cmp, g env e1, g env e2))
      | _ -> failwith "equality supported only for bool, int, and float")
   | Closure.IfLE(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfLE(x, y, g env e1, g env e2))
      | Type.Float ->
-       let cmp = Id.genid "l" in
-       Ans(IfFEq(x, y, cmp, g env e1, g env e2))
+       Ans(IfFLE(x, y, reg_cmp, g env e1, g env e2))
      | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2) ->
     let e1' = g env e1 in
