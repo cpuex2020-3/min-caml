@@ -154,7 +154,7 @@ and g' oc = function
   | Tail, CallCls(x, ys, zs, reg_cl_buf) ->
     g'_args oc [(x, reg_cl)] ys zs;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
-    Printf.fprintf oc "\tjr\t%s\n" reg_cl_buf;
+    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_cl_buf;
   | Tail, CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     Printf.fprintf oc "\tj\t%s\n" x;
