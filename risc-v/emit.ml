@@ -58,7 +58,12 @@ and g' oc = function
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
     Printf.fprintf oc "\tsub\t%s, zero, %s\n" x x
   | NonTail(x), Add(y, z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
-  | NonTail(x), AddI(y, i) -> Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y i
+  | NonTail(x), AddI(y, i) ->
+    if i > 2047 then
+      (Printf.fprintf oc "\tli\t%s, %d\n" reg_addi_buf i;
+       Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y reg_addi_buf)
+    else
+      Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y i
   | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(x), Ld(y, V(z), i) ->

@@ -46,6 +46,7 @@ val allfregs : Id.t list
 val reg_cl : Id.t
 val reg_ra : Id.t
 val reg_cmp : Id.t
+val reg_addi_buf : Id.t
 (*
 val reg_sw : Id.t
 val reg_fsw : Id.t
