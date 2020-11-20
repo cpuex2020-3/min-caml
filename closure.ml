@@ -6,6 +6,8 @@ type t =
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
+  | Mul of Id.t * int
+  | Div of Id.t * int
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
@@ -33,6 +35,7 @@ let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
   | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2)| IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x) -> S.singleton x
@@ -51,6 +54,8 @@ let rec g env known = function
   | KNormal.Neg(x) -> Neg(x)
   | KNormal.Add(x, y) -> Add(x, y)
   | KNormal.Sub(x, y) -> Sub(x, y)
+  | KNormal.Mul(x, i) -> Mul(x, i)
+  | KNormal.Div(x, i) -> Div(x, i)
   | KNormal.FNeg(x) -> FNeg(x)
   | KNormal.FAdd(x, y) -> FAdd(x, y)
   | KNormal.FSub(x, y) -> FSub(x, y)
@@ -111,6 +116,8 @@ let rec print_t t depth =
   | Neg id -> Printf.printf "NEG %s" id
   | Add (lhs, rhs) -> Printf.printf "ADD %s %s\n" lhs rhs
   | Sub (lhs, rhs) -> Printf.printf "SUB %s %s\n" lhs rhs
+  | Mul (lhs, rhs) -> Printf.printf "MUL %s %d\n" lhs rhs
+  | Div (lhs, rhs) -> Printf.printf "DIV %s %d\n" lhs rhs
   | FNeg id -> Printf.printf "FNEG %s" id
   | FAdd (lhs, rhs) -> Printf.printf "FADD %s %s\n" lhs rhs
   | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs

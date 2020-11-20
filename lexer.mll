@@ -38,8 +38,12 @@ rule token = parse
     { MINUS_DOT }
 | "+."
     { PLUS_DOT }
+| "*"
+    { AST }
 | "*."
     { AST_DOT }
+| "/"
+    { SLASH }
 | "/."
     { SLASH_DOT }
 | '='
@@ -70,6 +74,8 @@ rule token = parse
     { COMMA }
 | '_'
     { IDENT(Id.gentmp Type.Unit) }
+| "create_array" (* [XX] ad hoc *)
+    { ARRAY_CREATE }
 | "Array.create" | "Array.make" (* [XX] ad hoc *)
     { ARRAY_CREATE }
 | '.'

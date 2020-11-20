@@ -11,6 +11,8 @@ and exp =
   | Add of Id.t * Id.t
   | AddI of Id.t * int
   | Sub of Id.t * Id.t
+  | Mul of Id.t * int
+  | Div of Id.t * int
   (* TODO: handle with id instead of id_or_imm. handling in emit can cause error. e.g. register dependencies *)
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
@@ -73,7 +75,7 @@ let rec fv_exp = function
   | Neg(x) | Mov(x) -> [x]
   | FMovD(x) | FNegD(x) | Save(x, _) -> [x]
   | Add(x, y) -> x :: [y]
-  | AddI(x, i) -> [x]
+  | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
   | Sub(x, y) -> x :: [y]
   | Ld(x, y', _) -> x :: fv_id_or_imm y'
   | LdDF(x, y', _) -> x :: fv_id_or_imm y'

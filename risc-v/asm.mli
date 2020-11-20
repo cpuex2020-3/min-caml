@@ -11,6 +11,8 @@ and exp =
   | Add of Id.t * Id.t
   | AddI of Id.t * int
   | Sub of Id.t * Id.t
+  | Mul of Id.t * int
+  | Div of Id.t * int
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
   | FMovD of Id.t

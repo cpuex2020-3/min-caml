@@ -9,6 +9,8 @@ let addtyp x = (x, Type.gentyp ())
 %token NOT
 %token MINUS
 %token PLUS
+%token AST
+%token SLASH
 %token MINUS_DOT
 %token PLUS_DOT
 %token AST_DOT
@@ -45,7 +47,7 @@ let addtyp x = (x, Type.gentyp ())
 %left COMMA
 %left EQUAL LESS_GREATER LESS GREATER LESS_EQUAL GREATER_EQUAL
 %left PLUS MINUS PLUS_DOT MINUS_DOT
-%left AST_DOT SLASH_DOT
+%left AST SLASH AST_DOT SLASH_DOT
 %right prec_unary_minus
 %left prec_app
 %left DOT
@@ -86,6 +88,10 @@ exp:
     { Add($1, $3) }
 | exp MINUS exp
     { Sub($1, $3) }
+| exp AST INT
+    { Mul($1, $3) }
+| exp SLASH INT
+    { Div($1, $3) }
 | exp EQUAL exp
     { Eq($1, $3) }
 | exp LESS_GREATER exp
@@ -115,6 +121,8 @@ exp:
 | LET IDENT EQUAL exp IN exp
     %prec prec_let
     { Let(addtyp $2, $4, $6) }
+| LET BOOL EQUAL exp IN exp
+    { $6 }
 | LET REC fundef IN exp
     %prec prec_let
     { LetRec($3, $5) }
@@ -130,6 +138,8 @@ exp:
     { Put($1, $4, $7) }
 | exp SEMICOLON exp
     { Let((Id.gentmp Type.Unit, Type.Unit), $1, $3) }
+| exp SEMICOLON
+    { Let((Id.gentmp Type.Unit, Type.Unit), $1, Unit) }
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { Array($2, $3) }

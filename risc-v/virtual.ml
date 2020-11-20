@@ -50,6 +50,8 @@ let rec g env = function
   | Closure.Neg(x) -> Ans(Neg(x))
   | Closure.Add(x, y) -> Ans(Add(x, y))
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
+  | Closure.Mul(x, y) -> Ans(Mul(x, y))
+  | Closure.Div(x, y) -> Ans(Div(x, y))
   | Closure.FNeg(x) -> Ans(FNegD(x))
   | Closure.FAdd(x, y) -> Ans(FAddD(x, y))
   | Closure.FSub(x, y) -> Ans(FSubD(x, y))

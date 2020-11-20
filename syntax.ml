@@ -7,6 +7,8 @@ type t = (* MinCaml¤Î¹½Ê¸¤òÉ½¸½¤¹¤ë¥Ç¡¼¥¿·¿ (caml2html: 
   | Neg of t
   | Add of t * t
   | Sub of t * t
+  | Mul of t * int
+  | Div of t * int
   | FNeg of t
   | FAdd of t * t
   | FSub of t * t
@@ -60,6 +62,20 @@ let rec print t depth =
       print t1 (depth + 1);
       print_newline();
       print t2 (depth + 1);
+      print_newline();
+    )
+  | Mul (t1, i) -> (
+      Printf.printf "MUL\n";
+      print t1 (depth + 1);
+      print_newline();
+      print_int i;
+      print_newline();
+    )
+  | Div (t1, i) -> (
+      Printf.printf "DIV\n";
+      print t1 (depth + 1);
+      print_newline();
+      print_int i;
       print_newline();
     )
   | FNeg t -> (

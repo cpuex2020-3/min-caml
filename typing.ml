@@ -3,7 +3,7 @@
 open Syntax
 
 exception Unify of Type.t * Type.t
-exception Error of t * Type.t * Type.t
+exception Error of t * string * string
 
 let extenv = ref M.empty
 
@@ -27,6 +27,8 @@ let rec deref_term = function
   | Neg(e) -> Neg(deref_term e)
   | Add(e1, e2) -> Add(deref_term e1, deref_term e2)
   | Sub(e1, e2) -> Sub(deref_term e1, deref_term e2)
+  | Mul(e1, i) -> Mul(deref_term e1, i)
+  | Div(e1, i) -> Div(deref_term e1, i)
   | Eq(e1, e2) -> Eq(deref_term e1, deref_term e2)
   | LE(e1, e2) -> LE(deref_term e1, deref_term e2)
   | FNeg(e) -> FNeg(deref_term e)
@@ -97,6 +99,9 @@ let rec g env e =
       unify Type.Int (g env e1);
       unify Type.Int (g env e2);
       Type.Int
+    | Mul(e1, _) | Div(e1, _) ->
+      unify Type.Int (g env e1);
+      Type.Int
     | FNeg(e) ->
       unify Type.Float (g env e);
       Type.Float
@@ -149,7 +154,7 @@ let rec g env e =
       unify Type.Int (g env e2);
       Type.Unit
   with Unify(t1, t2) ->
-    raise (Error(deref_term e, deref_typ t1, deref_typ t2))
+    raise (Error(deref_term e, Type.str (deref_typ t1), Type.str (deref_typ t2)))
 
 let f e =
   extenv := M.empty;
@@ -159,6 +164,6 @@ let f e =
   | _ -> Format.eprintf "warning: final result does not have type unit@.");
 *)
   (try unify Type.Unit (g M.empty e)
-   with Unify _ -> failwith "top level does not have type unit");
+   with Unify _ -> ());
   extenv := M.map deref_typ !extenv;
   deref_term e

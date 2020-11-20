@@ -65,6 +65,20 @@ and g' oc = function
     else
       Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y i
   | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
+  | NonTail(x), Mul(y, i) ->
+    if i == 2 then
+      Printf.fprintf oc "\tslli\t%s, %s, 1\n" x y
+    else if i == 4 then
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" x y
+    else
+      raise (Failure "Unhandled multiplier")
+  | NonTail(x), Div(y, i) ->
+    if i == 2 then
+      Printf.fprintf oc "\tsrli\t%s, %s, 1\n" x y
+    else if i == 4 then
+      Printf.fprintf oc "\tsrli\t%s, %s, 2\n" x y
+    else
+      raise (Failure "Unhandled divider")
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(x), Ld(y, V(z), i) ->
     if i = 4 then
@@ -128,7 +142,7 @@ and g' oc = function
   | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ as exp) ->
+  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->

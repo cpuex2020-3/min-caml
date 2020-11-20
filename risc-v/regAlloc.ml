@@ -46,8 +46,8 @@ let rec source t = function
   | Ans(exp) -> source' t exp
   | Let(_, _, e) -> source t e
 and source' t = function
-  | Mov(x) | Neg(x) | AddI(x, _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]
-  | Add(x, y) | FAddD(x, y) | FMulD(x, y) -> [x; y]
+  | Mov(x) | Neg(x) | AddI(x, _) | Mul(x, _) | Div(x, _) | FMovD(x) | FNegD(x) -> [x]
+  | Add(x, y) | Sub(x, y) | FAddD(x, y) | FMulD(x, y) | FSubD(x, y) | FDivD(x, y) -> [x; y]
   | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfFEq(_, _, _, e1, e2) | IfFLE(_, _, _, e1, e2) ->
     source t e1 @ source t e2
   (*| IfGE(_, _, e1, e2) ->*)
@@ -145,6 +145,8 @@ and g' dest cont regenv = function
   | Add(x, y) -> (Ans(Add(find x Type.Int regenv, find y Type.Int regenv)), regenv)
   | AddI(x, i) -> (Ans(AddI(find x Type.Int regenv, i)), regenv)
   | Sub(x, y) -> (Ans(Sub(find x Type.Int regenv, find y Type.Int regenv)), regenv)
+  | Mul(x, i) -> (Ans(Mul(find x Type.Int regenv, i)), regenv)
+  | Div(x, i) -> (Ans(Div(find x Type.Int regenv, i)), regenv)
   | Ld(x, y', i) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, i)), regenv)
   | St(x, y, z', i) -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv, i)), regenv)
   | FMovD(x) -> (Ans(FMovD(find x Type.Float regenv)), regenv)
