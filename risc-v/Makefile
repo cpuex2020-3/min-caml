@@ -52,7 +52,7 @@ PK = pk
 
 test/%.s: $(RESULT) test/%.ml
 	./$(RESULT) test/$*
-test/%: test/%.s libmincaml.S stub.c
+test/%: test/%.s libmincaml.S stub.c lib.s
 	riscv64-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
 	#riscv32-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
 test/%.res: test/%

@@ -100,7 +100,11 @@ and g' oc = function
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
     Printf.fprintf oc "\tsw\t%s, 0(%s)\n" x y
   | NonTail(x), FMovD(y) ->
-    if x <> y then Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" x y
+    if x <> y then
+      if List.mem x allfregs then
+        Printf.fprintf oc "\tfsgnj.s.w\t%s, %s, %s\n" x y y
+      else
+        Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" x y
   | NonTail(x), FNegD(y) ->
     Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y y;
   | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y z
@@ -189,7 +193,7 @@ and g' oc = function
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" fregs.(0) a
+      Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" a fregs.(0) fregs.(0)
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in
@@ -201,7 +205,7 @@ and g' oc = function
     if List.mem a allregs && a <> regs.(0) then
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" a fregs.(0)
+      Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" a fregs.(0) fregs.(0)
 and g'_tail_if oc x y e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
@@ -271,7 +275,11 @@ and g'_args oc x_reg_cl ys zs =
       (0, [])
       zs in
   List.iter
-    (fun (z, fr) -> Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" fr z)
+    (fun (z, fr) ->
+       if List.mem fr allfregs then
+         Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" fr z z
+       else
+         Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" fr z)
     (shuffle sw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
