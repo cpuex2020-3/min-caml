@@ -3,6 +3,7 @@ tmp*
 *swo
 *~
 *.s
+!risc-v/lib.s
 
 # point ignorance
 test/manyargs.ml
