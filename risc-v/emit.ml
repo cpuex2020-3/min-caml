@@ -40,6 +40,13 @@ let rec shuffle sw xys =
         xys)
   | xys, acyc -> acyc @ shuffle sw xys
 
+let rec omit_paren s =
+  try
+    let lparen = String.index s '(' in
+    let rparen = String.index s ')' in
+    String.sub s (lparen + 1) (rparen - lparen - 1)
+  with Not_found -> raise (Failure "no parenthesis.")
+
 type dest = Tail | NonTail of Id.t
 
 let rec g oc = function
@@ -102,7 +109,7 @@ and g' oc = function
   | NonTail(x), FMovD(y) ->
     if x <> y then
       if List.mem x allfregs then
-        Printf.fprintf oc "\tfsgnj.s.w\t%s, %s, %s\n" x y y
+        Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" x y y
       else
         Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" x y
   | NonTail(x), FNegD(y) ->
@@ -275,11 +282,21 @@ and g'_args oc x_reg_cl ys zs =
       (0, [])
       zs in
   List.iter
+    (* TODO: maybe wrong *)
     (fun (z, fr) ->
        if List.mem fr allfregs then
-         Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" fr z z
+         (if String.contains z ')' then
+            (Printf.fprintf oc "\tlw\t%s, %s\n" (omit_paren z) z;
+             Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" fr (omit_paren z))
+          else
+            Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" fr z z
+         )
        else
-         Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" fr z)
+         (if String.contains fr ')' then
+            (Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" (omit_paren fr) z;
+             Printf.fprintf oc "\tsw\t%s, %s\n" (omit_paren fr) fr)
+          else
+            Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" fr z))
     (shuffle sw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
@@ -292,15 +309,15 @@ let f oc (Prog(data, fundefs, e)) =
   let callee_saved_regs = ["s0"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"] in
   let callee_saved_regs_count = List.length callee_saved_regs in
   Format.eprintf "generating assembly...@.";
-  Printf.fprintf oc ".data\n";
+  Printf.fprintf oc "\t.data\n";
   List.iter
     (fun (Id.L(x), d) ->
        Printf.fprintf oc "%s:\t# %f\n" x d;
        Printf.fprintf oc "\t.word\t0x%lx\n" (Int32.bits_of_float d))
     data;
-  Printf.fprintf oc ".text\n";
+  Printf.fprintf oc "\t.text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
-  Printf.fprintf oc ".globl\tmin_caml_start\n";
+  Printf.fprintf oc "\t.globl\tmin_caml_start\n";
   Printf.fprintf oc "min_caml_start:\n";
   Printf.fprintf oc "\taddi\tsp, sp, -52\n";
   List.iteri (
