@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-ln -sf risc-v/{*.ml{,i},libmincaml.S,Makefile,lib.s} .
-cd test; ln -sf risc-v/{,too}manyargs.ml .; cd ..
-cd shootout; ln -sf risc-v/Makefile .; cd ..
-cd bytemark; ln -sf risc-v/Makefile .; cd ..
-cd min-rt; ln -sf risc-v/globals.s .; cd ..
