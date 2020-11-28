@@ -52,11 +52,11 @@ let rec g env = function
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
   | Closure.Mul(x, y) -> Ans(Mul(x, y))
   | Closure.Div(x, y) -> Ans(Div(x, y))
-  | Closure.FNeg(x) -> Ans(FNegD(x))
-  | Closure.FAdd(x, y) -> Ans(FAddD(x, y))
-  | Closure.FSub(x, y) -> Ans(FSubD(x, y))
-  | Closure.FMul(x, y) -> Ans(FMulD(x, y))
-  | Closure.FDiv(x, y) -> Ans(FDivD(x, y))
+  | Closure.FNeg(x) -> Ans(FNeg(x))
+  | Closure.FAdd(x, y) -> Ans(FAdd(x, y))
+  | Closure.FSub(x, y) -> Ans(FSub(x, y))
+  | Closure.FMul(x, y) -> Ans(FMul(x, y))
+  | Closure.FDiv(x, y) -> Ans(FDiv(x, y))
   | Closure.IfEq(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2))
@@ -76,7 +76,7 @@ let rec g env = function
   | Closure.Var(x) ->
     (match M.find x env with
      | Type.Unit -> Ans(Nop)
-     | Type.Float -> Ans(FMovD(x))
+     | Type.Float -> Ans(FMov(x))
      | _ -> Ans(Mov(x)))
   | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (*(caml2html: virtual_makecls) *)
     let e2' = g (M.add x t env) e2 in

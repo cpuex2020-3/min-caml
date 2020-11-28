@@ -16,13 +16,12 @@ and exp =
   (* TODO: handle with id instead of id_or_imm. handling in emit can cause error. e.g. register dependencies *)
   | Ld of Id.t * id_or_imm * int
   | St of Id.t * Id.t * id_or_imm * int
-  (* TODO: change the name. ex) FMovD -> FMov *)
-  | FMovD of Id.t
-  | FNegD of Id.t
-  | FAddD of  Id.t * Id.t
-  | FSubD of  Id.t * Id.t
-  | FMulD of  Id.t * Id.t
-  | FDivD of  Id.t * Id.t
+  | FMov of Id.t
+  | FNeg of Id.t
+  | FAdd of  Id.t * Id.t
+  | FSub of  Id.t * Id.t
+  | FMul of  Id.t * Id.t
+  | FDiv of  Id.t * Id.t
   | LdDF of Id.t * id_or_imm * int
   | StDF of Id.t * Id.t * id_or_imm * int
   (* virtual instructions *)
@@ -73,7 +72,7 @@ let rec fv_exp = function
   | SetL(_) -> []
   (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
-  | FMovD(x) | FNegD(x) | Save(x, _) -> [x]
+  | FMov(x) | FNeg(x) | Save(x, _) -> [x]
   | Add(x, y) -> x :: [y]
   | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
   | Sub(x, y) -> x :: [y]
@@ -81,7 +80,7 @@ let rec fv_exp = function
   | LdDF(x, y', _) -> x :: fv_id_or_imm y'
   | St(x, y, z', _) -> x :: y :: fv_id_or_imm z'
   | StDF(x, y, z', _) -> x :: y :: fv_id_or_imm z'
-  | FAddD(x, y) | FSubD(x, y) | FMulD(x, y) | FDivD(x, y) -> [x; y]
+  | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
   | IfFEq(x, y, cmp, e1, e2) | IfFLE(x, y, cmp, e1, e2) -> x :: y :: cmp :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)

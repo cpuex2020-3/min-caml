@@ -1,4 +1,4 @@
-type t = (* MinCaml¤Î¹½Ê¸¤òÉ½¸½¤¹¤ë¥Ç¡¼¥¿·¿ (caml2html: syntax_t) *)
+type t =
   | Unit
   | Bool of bool
   | Int of int

@@ -31,13 +31,12 @@ let rec shuffle sw xys =
   match List.partition (fun (_, y) -> List.mem_assoc y xys) xys with
   | [], [] -> []
   | (x, y) :: xys, [] ->
-    (y, sw) :: (x, y) :: shuffle sw (
-      List.map (
-        function
-        | (y', z) when y = y' -> (sw, z)
-        | yz -> yz
-      )
-        xys)
+    (y, sw) :: (x, y) :: shuffle sw
+      (List.map
+         (function
+           | (y', z) when y = y' -> (sw, z)
+           | yz -> yz)
+         xys)
   | xys, acyc -> acyc @ shuffle sw xys
 
 let rec omit_paren s =
@@ -56,7 +55,7 @@ let rec g oc = function
     g oc (dest, e)
 and g' oc = function
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i (* for visibility, use li *)
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
   | NonTail(x), SetL(Id.L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | NonTail(x), Mov(y) ->
     if x <> y then
@@ -106,18 +105,17 @@ and g' oc = function
       raise (Failure "Unhandled size in Ld; emit.ml");
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
     Printf.fprintf oc "\tsw\t%s, 0(%s)\n" x y
-  | NonTail(x), FMovD(y) ->
+  | NonTail(x), FMov(y) ->
     if x <> y then
       if List.mem x allfregs then
         Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" x y y
       else
         Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" x y
-  | NonTail(x), FNegD(y) ->
-    Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y y;
-  | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y z
-  | NonTail(x), FSubD(y, z) -> Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
-  | NonTail(x), FMulD(y, z) -> Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y z
-  | NonTail(x), FDivD(y, z) -> Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x y z
+  | NonTail(x), FNeg(y) -> Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y y;
+  | NonTail(x), FAdd(y, z) -> Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y z
+  | NonTail(x), FSub(y, z) -> Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
+  | NonTail(x), FMul(y, z) -> Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y z
+  | NonTail(x), FDiv(y, z) -> Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x y z
   | NonTail(x), LdDF(y, V(z), i) ->
     if i = 4 then
       Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
@@ -156,7 +154,7 @@ and g' oc = function
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
+  | Tail, (FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdDF _  as exp) ->
     g' oc (NonTail(fregs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (Restore(x) as exp) ->
@@ -269,12 +267,10 @@ and g'_args oc x_reg_cl ys zs =
       (0, x_reg_cl)
       ys in
   List.iter
-    (fun (y, r) -> (
-         (* TODO: understand how it works *)
-         if String.contains r '(' then Printf.fprintf oc "\tsw\t%s, %s\n" y r
-         else if String.contains y '(' then Printf.fprintf oc "\tlw\t%s, %s\n" r y
-         else Printf.fprintf oc "\tmv\t%s, %s\n" r y
-       ))
+    (fun (y, r) ->
+       (if String.contains r '(' then Printf.fprintf oc "\tsw\t%s, %s\n" y r
+        else if String.contains y '(' then Printf.fprintf oc "\tlw\t%s, %s\n" r y
+        else Printf.fprintf oc "\tmv\t%s, %s\n" r y))
     (shuffle sw yrs);
   let (d, zfrs) =
     List.fold_left
@@ -320,17 +316,17 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.globl\tmin_caml_start\n";
   Printf.fprintf oc "min_caml_start:\n";
   Printf.fprintf oc "\taddi\tsp, sp, -52\n";
-  List.iteri (
-    fun i r -> Printf.fprintf oc "\tsw\t%s, %d(sp)\n" r ((callee_saved_regs_count - i) * 4);
-  ) callee_saved_regs;
+  List.iteri
+    (fun i r -> Printf.fprintf oc "\tsw\t%s, %d(sp)\n" r ((callee_saved_regs_count - i) * 4))
+    callee_saved_regs;
   stackset := S.empty;
   stackmap := [];
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
   (*Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;*)
   g oc (NonTail(regs.(0)), e);
-  List.iteri (
-    fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4);
-  ) (List.rev callee_saved_regs);
+  List.iteri
+    (fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4))
+    (List.rev callee_saved_regs);
   Printf.fprintf oc "\taddi\tsp, sp, 52\n";
   Printf.fprintf oc "\tret\n";
