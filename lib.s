@@ -1,6 +1,8 @@
 	.data
 l.one:	# 1.000000
 	.word	0x3f800000
+l.zero:	# 0x00000000
+	.word	0x00000000
 l.ftoi_cmp: # 8388608.0
 	.word	0x4b000000
 	.text
@@ -52,14 +54,28 @@ min_caml_float_of_int:
 	ret
 	.globl min_caml_truncate
 min_caml_truncate:
+	la	t2, l.zero
+	flw	ft0, 0(t2)
+	flt.s	t2, fa0, ft0
+	fsgnjx.s	fa0, fa0, fa0
 	sw	ra,	4(s0)
-	addi	s0, s0, 8
+	sw	t2, 8(s0)
+	addi	s0, s0, 12
 	jal	min_caml_floor
-	addi	s0, s0, -8
+	jal	min_caml_int_of_float
+	addi	s0, s0, -12
+	lw	t2, 8(s0)
 	lw	ra,	4(s0)
-	j	min_caml_int_of_float
+	beq	t2, zero, truncate_end
+	sub	a0, zero, a0
+truncate_end:
+	ret
 	.globl min_caml_int_of_float
 min_caml_int_of_float:
+	la	t2, l.zero
+	flw	ft0, 0(t2)
+	flt.s	t2, fa0, ft0
+	fsgnjx.s	fa0, fa0, fa0
 	la	t6, l.ftoi_cmp
 	flw	ft0, 0(t6)
 	li	t4, 1258291200
@@ -68,6 +84,9 @@ min_caml_int_of_float:
 	fadd.s	fa0, fa0, ft0
 	fmv.x.s	a0, fa0
 	sub	a0, a0, t4
+	beq	t2, zero, ftoi_end
+	sub	a0, zero, a0
+ftoi_end:
 	ret
 ftoi_else:
 	li	t5, 0
@@ -84,6 +103,8 @@ ftoi_sum:
 	li	t4, 8388608
 ftoi_loop:
 	bne	t5, zero, ftoi_sum_cont
+	beq	t2, zero, ftoi_end
+	sub	a0, zero, a0
 	ret
 ftoi_sum_cont:
 	addi	t5, t5, -1

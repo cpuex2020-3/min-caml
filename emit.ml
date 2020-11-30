@@ -72,9 +72,9 @@ and g' oc = function
       Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y i
   | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
   | NonTail(x), Mul(y, i) ->
-    if i == 2 then
+    if i = 2 then
       Printf.fprintf oc "\tslli\t%s, %s, 1\n" x y
-    else if i == 4 then
+    else if i = 4 then
       Printf.fprintf oc "\tslli\t%s, %s, 2\n" x y
     else
       raise (Failure "Unhandled multiplier")
@@ -88,13 +88,13 @@ and g' oc = function
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
   | NonTail(x), Ld(y, V(z), i) ->
     if i = 4 then
-      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" reg_buf z
     else if i = 8 then
-      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
+      Printf.fprintf oc "\tslli\t%s, %s, 3\n" reg_buf z
     else
       raise (Failure "Unhandled size in Ld; emit.ml");
-    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
-    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" x y
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y reg_buf;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" x reg_buf
   | NonTail(_), St(x, y, C(j)) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x j y
   | NonTail(_), St(x, y, V(z)) ->
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;

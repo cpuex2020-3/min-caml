@@ -6,5 +6,5 @@ make
 ./min-caml test/$1
 cd $sim_path
 make
-./god_float ../../min-caml/test/$1.s | xargs printf "%d"
+./god_float ../../min-caml/test/$1.s
 cd -

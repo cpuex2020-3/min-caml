@@ -3,6 +3,9 @@ NCSUFFIX = .opt
 CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS=-warn-error -31
+MIN_CAML_DIR = /Users/joe/ut/3a/cpuex/min-caml
+SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/3rd
+SIM_EXEC = god_float
 
 default: debug-code top $(RESULT)
 $(RESULT): debug-code top
@@ -25,42 +28,20 @@ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
-#SUB_TESTS = matmul
-
-# funcomp and cls-reg-bug works, but somehow print_int doesn't work. check with `echo $?`.
-SUB_TESTS = print sum-tail gcd sum fib ack even-odd shuffle sub spill spill3 \
-join-stack join-stack2 join-stack3 \
-join-reg join-reg2 \
-adder cls-rec cls-bug \
-# funcomp cls-reg-bug
-
-# SIM: TODO
-# sum ack shuffle sub non-tail-if2
-
-sub_tests: $(SUB_TESTS:%=test/%.cmp) # test for already implemented codes
-all_tests: $(TESTS:%=test/%.cmp)
+test: $(TESTS:%=test/%.cmp)
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
 
-#SPIKE = /opt/riscv/spike/bin/spike
-#PK = /opt/riscv/pk/riscv32-unknown-elf/bin/pk
-SPIKE = spike
-PK = pk
-
 test/%.s: $(RESULT) test/%.ml
 	./$(RESULT) test/$*
-test/%: test/%.s libmincaml.S stub.c lib.s
-	riscv64-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
-	#riscv32-unknown-elf-gcc $(CFLAGS) $^ -lm -o $@
-test/%.res: test/%
-	$(SPIKE) $(PK) $< > $@
+test/%.res: test/%.s
+	cd $(SIM_PATH) && make && ./$(SIM_EXEC) $(MIN_CAML_DIR)/$^ > $(MIN_CAML_DIR)/$@
 test/%.ans: test/%.ml
-	ocaml $< >> $@
+	ocaml $< > $@
 test/%.cmp: test/%.res test/%.ans
-	tail -n +2 $< > tmp && mv tmp $<
-	diff $^ > $@
-	#sed -i 1d $<
+	ghead -n -1 $< > tmp && mv tmp $<
+	diff -w -B $^ > $@
 
 raytrace: $(RESULT)
 	cat ./raytracer/globals.ml > ./raytracer/minrt_full.ml
