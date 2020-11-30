@@ -11,6 +11,7 @@ min_caml_create_array:
 create_array_loop:
 	bne	t5, zero, create_array_cont
 create_array_exit:
+	mv	a0, t0
 	add	t0, t0, t4
 	ret
 create_array_cont:
@@ -27,6 +28,7 @@ min_caml_create_float_array:
 create_float_array_loop:
 	bne	t5, zero, create_float_array_cont
 create_float_array_exit:
+	mv	a0, t0
 	add	t0, t0, t4
 	ret
 create_float_array_cont:
