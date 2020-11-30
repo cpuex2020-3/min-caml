@@ -52,6 +52,12 @@ min_caml_float_of_int:
 	ret
 	.globl min_caml_truncate
 min_caml_truncate:
+	sw	ra,	4(s0)
+	addi	s0, s0, 8
+	jal	min_caml_floor
+	addi	s0, s0, -8
+	lw	ra,	4(s0)
+	j	min_caml_int_of_float
 	.globl min_caml_int_of_float
 min_caml_int_of_float:
 	la	t6, l.ftoi_cmp
