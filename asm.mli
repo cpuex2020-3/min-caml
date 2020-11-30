@@ -14,7 +14,7 @@ and exp =
   | Mul of Id.t * int
   | Div of Id.t * int
   | Ld of Id.t * id_or_imm * int
-  | St of Id.t * Id.t * id_or_imm * int
+  | St of Id.t * Id.t * id_or_imm
   | FMov of Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
@@ -22,7 +22,7 @@ and exp =
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
   | LdDF of Id.t * id_or_imm * int
-  | StDF of Id.t * Id.t * id_or_imm * int
+  | StDF of Id.t * Id.t * id_or_imm
   (*| Comment of string*)
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t
@@ -48,7 +48,7 @@ val allfregs : Id.t list
 val reg_cl : Id.t
 val reg_ra : Id.t
 val reg_cmp : Id.t
-val reg_addi_buf : Id.t
+val reg_buf : Id.t
 (*
 val reg_sw : Id.t
 val reg_fsw : Id.t

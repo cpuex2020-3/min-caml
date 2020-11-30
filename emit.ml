@@ -66,8 +66,8 @@ and g' oc = function
   | NonTail(x), Add(y, z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
   | NonTail(x), AddI(y, i) ->
     if i > 2047 then
-      (Printf.fprintf oc "\tli\t%s, %d\n" reg_addi_buf i;
-       Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y reg_addi_buf)
+      (Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y reg_buf)
     else
       Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y i
   | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z
@@ -95,16 +95,10 @@ and g' oc = function
       raise (Failure "Unhandled size in Ld; emit.ml");
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" x y
-  | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (j * i) y
-  | NonTail(_), St(x, y, V(z), i) ->
-    if i = 4 then
-      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
-    else if i = 8 then
-      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
-    else
-      raise (Failure "Unhandled size in Ld; emit.ml");
-    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
-    Printf.fprintf oc "\tsw\t%s, 0(%s)\n" x y
+  | NonTail(_), St(x, y, C(j)) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x j y
+  | NonTail(_), St(x, y, V(z)) ->
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;
+    Printf.fprintf oc "\tsw\t%s, 0(%s)\n" x reg_buf
   | NonTail(x), FMov(y) ->
     if x <> y then
       if List.mem x allfregs then
@@ -118,24 +112,16 @@ and g' oc = function
   | NonTail(x), FDiv(y, z) -> Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x y z
   | NonTail(x), LdDF(y, V(z), i) ->
     if i = 4 then
-      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
-    else if i = 8 then
-      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
+      Printf.fprintf oc "\tslli\t%s, %s, 2\n" reg_buf z
     else
       raise (Failure "Unhandled size in LdDF; emit.ml");
-    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
-    Printf.fprintf oc "\tflw\t%s, 0(%s)\n" x y
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y reg_buf;
+    Printf.fprintf oc "\tflw\t%s, 0(%s)\n" x reg_buf
   | NonTail(x), LdDF(y, C(j), i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (j * i) y
-  | NonTail(_), StDF(x, y, V(z), i) ->
-    if i = 4 then
-      Printf.fprintf oc "\tslli\t%s, %s, 2\n" z z
-    else if i = 8 then
-      Printf.fprintf oc "\tslli\t%s, %s, 3\n" z z
-    else
-      raise (Failure "Unhandled size in StDF; emit.ml");
-    Printf.fprintf oc "\tadd\t%s, %s, %s\n" y y z;
-    Printf.fprintf oc "\tfsw\t%s, 0(%s)\n" x y
-  | NonTail(_), StDF(x, y, C(j), i) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(_), StDF(x, y, V(z)) ->
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;
+    Printf.fprintf oc "\tfsw\t%s, 0(%s)\n" x reg_buf
+  | NonTail(_), StDF(x, y, C(j)) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x j y
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
     Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (offset y) reg_sp
@@ -309,7 +295,7 @@ let f oc (Prog(data, fundefs, e)) =
   List.iter
     (fun (Id.L(x), d) ->
        Printf.fprintf oc "%s:\t# %f\n" x d;
-       Printf.fprintf oc "\t.word\t0x%lx\n" (Int32.bits_of_float d))
+       Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.bits_of_float d))
     data;
   Printf.fprintf oc "\t.text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;

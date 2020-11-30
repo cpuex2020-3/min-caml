@@ -84,13 +84,13 @@ let rec g env = function
       expand
         (List.map (fun y -> (y, M.find y env)) ys)
         (4, e2')
-        (fun y offset store_fv -> seq(StDF(y, x, C(offset), 1), store_fv))
-        (fun y _ offset store_fv -> seq(St(y, x, C(offset), 1), store_fv)) in
+        (fun y offset store_fv -> seq(StDF(y, x, C(offset)), store_fv))
+        (fun y _ offset store_fv -> seq(St(y, x, C(offset)), store_fv)) in
     Let((x, t), Mov(reg_hp),
         Let((reg_hp, Type.Int), AddI(reg_hp, align offset), (* TODO: if imm was bigger than 1 << 12... *)
             let z = Id.genid "l" in
             Let((z, Type.Int), SetL(l),
-                seq(St(z, x, C(0), 1),
+                seq(St(z, x, C(0)),
                     store_fv))))
   | Closure.AppCls(x, ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
@@ -106,8 +106,8 @@ let rec g env = function
       expand
         (List.map (fun x -> (x, M.find x env)) xs)
         (0, Ans(Mov(y)))
-        (fun x offset store -> seq(StDF(x, y, C(offset), 1), store))
-        (fun x _ offset store -> seq(St(x, y, C(offset), 1), store)) in
+        (fun x offset store -> seq(StDF(x, y, C(offset)), store))
+        (fun x _ offset store -> seq(St(x, y, C(offset)), store)) in
     Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
         Let((reg_hp, Type.Int), AddI(reg_hp, align offset), (* TODO: if imm was bigger than 1 << 12... *)
             store))
@@ -127,16 +127,19 @@ let rec g env = function
   | Closure.Get(x, y) ->
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
-     (* TODO: really 8? maybe 4 on single precision. need to fix libmincaml.s too *)
-     | Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 8))
+     | Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 4))
      | Type.Array(_) -> Ans(Ld(x, V(y), 4))
      | _ -> assert false)
   | Closure.Put(x, y, z) ->
+    let offset = Id.genid "o" in
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
-     (* TODO: really 8? maybe 4 on single precision. need to fix libmincaml.s too *)
-     | Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))
-     | Type.Array(_) -> Ans(St(z, x, V(y), 4))
+     | Type.Array(Type.Float) ->
+       Let((offset, Type.Int), Mul(y, 4),
+           Ans(StDF(z, x, V(offset))))
+     | Type.Array(_) ->
+       Let((offset, Type.Int), Mul(y, 4),
+           Ans(St(z, x, V(offset))))
      | _ -> assert false)
   | Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
 
