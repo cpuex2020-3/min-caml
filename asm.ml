@@ -22,8 +22,8 @@ and exp =
   | FSub of  Id.t * Id.t
   | FMul of  Id.t * Id.t
   | FDiv of  Id.t * Id.t
-  | LdDF of Id.t * id_or_imm * int
-  | StDF of Id.t * Id.t * id_or_imm
+  | LdF of Id.t * id_or_imm * int
+  | StF of Id.t * Id.t * id_or_imm
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
@@ -48,7 +48,6 @@ let fregs = Array.init 8 (fun i -> Printf.sprintf "fa%d" i)
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
 let reg_cl = regs.(Array.length regs - 1) (* closure address (caml2html: sparcasm_regcl) *)
-let reg_cmp = "t3" (* compare register for floating point comparison *)
 let reg_buf = "t2" (* register which is usable in emit.ml. TODO: better fix. *)
 (*
 let reg_sw = regs.(Array.length regs - 1) (* temporary for swap *)
@@ -77,9 +76,9 @@ let rec fv_exp = function
   | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
   | Sub(x, y) -> x :: [y]
   | Ld(x, y', _) -> x :: fv_id_or_imm y'
-  | LdDF(x, y', _) -> x :: fv_id_or_imm y'
+  | LdF(x, y', _) -> x :: fv_id_or_imm y'
   | St(x, y, z') -> x :: y :: fv_id_or_imm z'
-  | StDF(x, y, z') -> x :: y :: fv_id_or_imm z'
+  | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)

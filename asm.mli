@@ -21,8 +21,8 @@ and exp =
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
-  | LdDF of Id.t * id_or_imm * int
-  | StDF of Id.t * Id.t * id_or_imm
+  | LdF of Id.t * id_or_imm * int
+  | StF of Id.t * Id.t * id_or_imm
   (*| Comment of string*)
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t
@@ -47,7 +47,6 @@ val allregs : Id.t list
 val allfregs : Id.t list
 val reg_cl : Id.t
 val reg_ra : Id.t
-val reg_cmp : Id.t
 val reg_buf : Id.t
 (*
 val reg_sw : Id.t

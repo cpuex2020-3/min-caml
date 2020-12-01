@@ -110,18 +110,18 @@ and g' oc = function
   | NonTail(x), FSub(y, z) -> Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
   | NonTail(x), FMul(y, z) -> Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y z
   | NonTail(x), FDiv(y, z) -> Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x y z
-  | NonTail(x), LdDF(y, V(z), i) ->
+  | NonTail(x), LdF(y, V(z), i) ->
     if i = 4 then
       Printf.fprintf oc "\tslli\t%s, %s, 2\n" reg_buf z
     else
       raise (Failure "Unhandled size in LdDF; emit.ml");
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y reg_buf;
     Printf.fprintf oc "\tflw\t%s, 0(%s)\n" x reg_buf
-  | NonTail(x), LdDF(y, C(j), i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (j * i) y
-  | NonTail(_), StDF(x, y, V(z)) ->
+  | NonTail(x), LdF(y, C(j), i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(_), StF(x, y, V(z)) ->
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;
     Printf.fprintf oc "\tfsw\t%s, 0(%s)\n" x reg_buf
-  | NonTail(_), StDF(x, y, C(j)) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x j y
+  | NonTail(_), StF(x, y, C(j)) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x j y
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
     Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (offset y) reg_sp
@@ -134,13 +134,13 @@ and g' oc = function
   | NonTail(x), Restore(y) ->
     assert (List.mem x allfregs);
     Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (offset y) reg_sp
-  | Tail, (Nop | St _ | StDF _ | Save _ as exp) ->
+  | Tail, (Nop | St _ | StF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdDF _  as exp) ->
+  | Tail, (FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _  as exp) ->
     g' oc (NonTail(fregs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (Restore(x) as exp) ->

@@ -46,7 +46,7 @@ let rec g env = function
         data := (l, d) :: !data;
         l in
     let x = Id.genid "l" in
-    Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0), 1)))
+    Let((x, Type.Int), SetL(l), Ans(LdF(x, C(0), 1)))
   | Closure.Neg(x) -> Ans(Neg(x))
   | Closure.Add(x, y) -> Ans(Add(x, y))
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
@@ -61,13 +61,13 @@ let rec g env = function
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2))
      | Type.Float ->
-       Ans(IfFEq(x, y, reg_cmp, g env e1, g env e2))
+       Ans(IfFEq(x, y, reg_buf, g env e1, g env e2))
      | _ -> failwith "equality supported only for bool, int, and float")
   | Closure.IfLE(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfLE(x, y, g env e1, g env e2))
      | Type.Float ->
-       Ans(IfFLE(x, y, reg_cmp, g env e1, g env e2))
+       Ans(IfFLE(x, y, reg_buf, g env e1, g env e2))
      | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2) ->
     let e1' = g env e1 in
@@ -84,7 +84,7 @@ let rec g env = function
       expand
         (List.map (fun y -> (y, M.find y env)) ys)
         (4, e2')
-        (fun y offset store_fv -> seq(StDF(y, x, C(offset)), store_fv))
+        (fun y offset store_fv -> seq(StF(y, x, C(offset)), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset)), store_fv)) in
     Let((x, t), Mov(reg_hp),
         Let((reg_hp, Type.Int), AddI(reg_hp, align offset), (* TODO: if imm was bigger than 1 << 12... *)
@@ -106,7 +106,7 @@ let rec g env = function
       expand
         (List.map (fun x -> (x, M.find x env)) xs)
         (0, Ans(Mov(y)))
-        (fun x offset store -> seq(StDF(x, y, C(offset)), store))
+        (fun x offset store -> seq(StF(x, y, C(offset)), store))
         (fun x _ offset store -> seq(St(x, y, C(offset)), store)) in
     Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
         Let((reg_hp, Type.Int), AddI(reg_hp, align offset), (* TODO: if imm was bigger than 1 << 12... *)
@@ -119,7 +119,7 @@ let rec g env = function
         (0, g (M.add_list xts env) e2)
         (fun x offset load ->
            if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)
-             fletd(x, LdDF(y, C(offset), 1), load))
+             fletd(x, LdF(y, C(offset), 1), load))
         (fun x t offset load ->
            if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)
              Let((x, t), Ld(y, C(offset), 1), load)) in
@@ -127,7 +127,7 @@ let rec g env = function
   | Closure.Get(x, y) ->
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
-     | Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 4))
+     | Type.Array(Type.Float) -> Ans(LdF(x, V(y), 4))
      | Type.Array(_) -> Ans(Ld(x, V(y), 4))
      | _ -> assert false)
   | Closure.Put(x, y, z) ->
@@ -136,7 +136,7 @@ let rec g env = function
      | Type.Array(Type.Unit) -> Ans(Nop)
      | Type.Array(Type.Float) ->
        Let((offset, Type.Int), Mul(y, 4),
-           Ans(StDF(z, x, V(offset))))
+           Ans(StF(z, x, V(offset))))
      | Type.Array(_) ->
        Let((offset, Type.Int), Mul(y, 4),
            Ans(St(z, x, V(offset))))
@@ -149,7 +149,7 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
     expand
       zts
       (4, g (M.add x t (M.add_list yts (M.add_list zts M.empty))) e)
-      (fun z offset load -> fletd(z, LdDF(x, C(offset), 1), load))
+      (fun z offset load -> fletd(z, LdF(x, C(offset), 1), load))
       (fun z t offset load -> Let((z, t), Ld(x, C(offset), 1), load)) in
   match t with
   | Type.Fun(_, t2) ->
