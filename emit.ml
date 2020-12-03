@@ -246,40 +246,22 @@ and g'_non_tail_float_if oc dest x y cmp e1 e2 b =
 and g'_args oc x_reg_cl ys zs =
   assert (List.length ys <= Array.length regs - List.length x_reg_cl);
   assert (List.length zs <= Array.length fregs);
-  let sw = Printf.sprintf "%d(%s)" (stacksize ()) reg_sp in
   let (i, yrs) =
     List.fold_left
       (fun (i, yrs) y -> (i + 1, (y, regs.(i)) :: yrs))
       (0, x_reg_cl)
       ys in
   List.iter
-    (fun (y, r) ->
-       (if String.contains r '(' then Printf.fprintf oc "\tsw\t%s, %s\n" y r
-        else if String.contains y '(' then Printf.fprintf oc "\tlw\t%s, %s\n" r y
-        else Printf.fprintf oc "\tmv\t%s, %s\n" r y))
-    (shuffle sw yrs);
+    (fun (y, r) -> Printf.fprintf oc "\tmv\t%s, %s\n" r y)
+    (shuffle reg_sw yrs);
   let (d, zfrs) =
     List.fold_left
       (fun (d, zfrs) z -> (d + 1, (z, fregs.(d)) :: zfrs))
       (0, [])
       zs in
   List.iter
-    (* TODO: maybe wrong *)
-    (fun (z, fr) ->
-       if List.mem fr allfregs then
-         (if String.contains z ')' then
-            (Printf.fprintf oc "\tlw\t%s, %s\n" (omit_paren z) z;
-             Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" fr (omit_paren z))
-          else
-            Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" fr z z
-         )
-       else
-         (if String.contains fr ')' then
-            (Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" (omit_paren fr) z;
-             Printf.fprintf oc "\tsw\t%s, %s\n" (omit_paren fr) fr)
-          else
-            Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" fr z))
-    (shuffle sw zfrs)
+    (fun (z, fr) -> Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" fr z z)
+    (shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   Printf.fprintf oc "%s:\n" x;
