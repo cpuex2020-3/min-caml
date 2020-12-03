@@ -104,7 +104,7 @@ and g' oc = function
       if List.mem x allfregs then
         Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" x y y
       else
-        Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" x y
+        Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" x y
   | NonTail(x), FNeg(y) -> Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y y;
   | NonTail(x), FAdd(y, z) -> Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y z
   | NonTail(x), FSub(y, z) -> Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
@@ -165,20 +165,20 @@ and g' oc = function
     g'_non_tail_float_if oc (NonTail(z)) x y cmp e1 e2 "feq.s"
   | NonTail(z), IfFLE(x, y, cmp, e1, e2) ->
     g'_non_tail_float_if oc (NonTail(z)) x y cmp e1 e2 "fle.s"
-  | Tail, CallCls(x, ys, zs, reg_cl_buf) ->
+  | Tail, CallCls(x, ys, zs) ->
     g'_args oc [(x, reg_cl)] ys zs;
-    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
-    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_cl_buf;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_buf reg_cl;
+    Printf.fprintf oc "\tjalr\tzero, %s, 0\n" reg_buf;
   | Tail, CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     Printf.fprintf oc "\tj\t%s\n" x;
-  | NonTail(a), CallCls(x, ys, zs, reg_cl_buf) ->
+  | NonTail(a), CallCls(x, ys, zs) ->
     g'_args oc [(x, reg_cl)] ys zs;
     let ss = stacksize () in
     Printf.fprintf oc "\tsw\t%s, %d(%s)\n" reg_ra ss reg_sp;
-    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_cl_buf reg_cl;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_buf reg_cl;
     Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
-    Printf.fprintf oc "\tjalr\t%s\n" reg_cl_buf;
+    Printf.fprintf oc "\tjalr\t%s\n" reg_buf;
     Printf.fprintf oc "\taddi\t%s, %s, -%d\n" reg_sp reg_sp (ss + 4);
     Printf.fprintf oc "\tlw\t%s, %d(%s)\n" reg_ra ss reg_sp;
     if List.mem a allregs && a <> regs.(0) then

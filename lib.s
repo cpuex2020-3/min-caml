@@ -5,6 +5,8 @@ l.zero:	# 0.0
 	.word	0x00000000
 l.ten:	# 10.0
 	.word	0x41200000
+l.point5:	# 0.5
+	.word	0x3f000000
 l.ftoi_cmp: # 8388608.0
 	.word	0x4b000000
 	.text
@@ -44,16 +46,25 @@ create_float_array_cont:
 
 	.globl min_caml_fsqr
 min_caml_fsqr:
-	fsqrt.s	fa0, fa0
+	fmul.s	fa0, fa0, fa0
 	ret
 	.globl min_caml_sqrt
 min_caml_sqrt:
-	fcvt.s.w	fa0, a0
 	fsqrt.s	fa0, fa0
 	ret
-	.globl min_caml_abs_float
-min_caml_abs_float:
+	.globl min_caml_fabs
+min_caml_fabs:
 	fsgnjx.s	fa0, fa0, fa0
+	ret
+	.globl min_caml_fless
+min_caml_fless:
+	flt.s	a0, fa0, fa1
+	ret
+	.globl min_caml_fhalf
+min_caml_fhalf:
+	la	t2, l.point5
+	flw	ft0, 0(t2)
+	fmul.s	fa0, fa0, ft0
 	ret
 	.globl min_caml_float_of_int
 min_caml_float_of_int:
@@ -154,6 +165,13 @@ min_caml_fispos:
 	la	t2, l.zero
 	flw	ft0, 0(t2)
 	flt.s	a0, ft0, fa0
+	ret
+
+	.globl min_caml_fisneg
+min_caml_fisneg:
+	la	t2, l.zero
+	flw	ft0, 0(t2)
+	flt.s	a0, fa0, ft0
 	ret
 
 	.globl min_caml_fneg

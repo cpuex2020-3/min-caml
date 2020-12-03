@@ -94,9 +94,7 @@ let rec g env = function
                     store_fv))))
   | Closure.AppCls(x, ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
-    let reg_cl_buf = Id.genid "l" in
-    Let((reg_cl_buf, Type.Int), Nop, (* need to 'declare' the reg_cl_buf to add to env. otherwise, Fatal Error would be raised *)
-        Ans(CallCls(x, int, float, reg_cl_buf)))
+    Ans(CallCls(x, int, float))
   | Closure.AppDir(Id.L(x), ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallDir(Id.L(x), int, float))

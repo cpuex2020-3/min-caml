@@ -31,7 +31,7 @@ and exp =
   | IfFEq of Id.t * Id.t * Id.t * t * t
   | IfFLE of Id.t * Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
-  | CallCls of Id.t * Id.t list * Id.t list * Id.t
+  | CallCls of Id.t * Id.t list * Id.t list
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t
   | Restore of Id.t

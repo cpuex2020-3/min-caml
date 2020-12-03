@@ -21,7 +21,7 @@ let rec target' src (dest, t) = function
   (*let c1, rs1 = target src (dest, t) e1 in*)
   (*let c2, rs2 = target src (dest, t) e2 in*)
   (*c1 && c2, rs1 @ rs2*)
-  | CallCls(x, ys, zs, reg_cl_buf) ->
+  | CallCls(x, ys, zs) ->
     true, (target_args src regs 0 ys @
            target_args src fregs 0 zs @
            if x = src then [reg_cl] else [])
@@ -164,11 +164,11 @@ and g' dest cont regenv = function
   (*| IfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2*)
   | IfFEq(x, y, cmp, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, cmp, e1', e2')) e1 e2
   | IfFLE(x, y, cmp, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, cmp, e1', e2')) e1 e2
-  | CallCls(x, ys, zs, reg_cl_buf) as exp ->
+  | CallCls(x, ys, zs) as exp ->
     if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
     else
-      g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs, find reg_cl_buf Type.Int regenv)) ys zs
+      g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs)) ys zs
   | CallDir(Id.L(x), ys, zs) as exp ->
     if List.length ys > Array.length regs || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)

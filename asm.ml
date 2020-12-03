@@ -30,7 +30,7 @@ and exp =
   | IfFEq of Id.t * Id.t * Id.t * t * t
   | IfFLE of Id.t * Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
-  | CallCls of Id.t * Id.t list * Id.t list * Id.t
+  | CallCls of Id.t * Id.t list * Id.t list
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t
   | Restore of Id.t
@@ -44,7 +44,7 @@ let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let caller_saved_regs = [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7" |]
 let callee_saved_regs = [| "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11" |]
 let regs = Array.append caller_saved_regs callee_saved_regs
-let fregs = Array.init 8 (fun i -> Printf.sprintf "fa%d" i)
+let fregs = [| "fa0"; "fa1"; "fa2"; "fa3"; "fa4"; "fa5"; "fa6"; "fa7"; "fs0"; "fs1"; "fs2"; "fs3"; "fs4"; "fs5"; "fs6"; "fs7"; "fs8"; "fs9"; "fs10"; "fs11" |]
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
 let reg_cl = regs.(Array.length regs - 1) (* closure address (caml2html: sparcasm_regcl) *)
@@ -83,7 +83,7 @@ let rec fv_exp = function
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
   | IfFEq(x, y, cmp, e1, e2) | IfFLE(x, y, cmp, e1, e2) -> x :: y :: cmp :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
-  | CallCls(x, ys, zs, reg_cl_buf) -> x :: reg_cl_buf :: ys @ zs
+  | CallCls(x, ys, zs) -> x :: ys @ zs
   | CallDir(_, ys, zs) -> ys @ zs
 and fv = function
   | Ans(exp) -> fv_exp exp
