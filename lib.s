@@ -1,8 +1,10 @@
 	.data
 l.one:	# 1.000000
 	.word	0x3f800000
-l.zero:	# 0x00000000
+l.zero:	# 0.0
 	.word	0x00000000
+l.ten:	# 10.0
+	.word	0x41200000
 l.ftoi_cmp: # 8388608.0
 	.word	0x4b000000
 	.text
@@ -80,14 +82,14 @@ min_caml_int_of_float:
 	la	t2, l.zero
 	flw	ft0, 0(t2)
 	flt.s	t2, fa0, ft0
-	fsgnjx.s	fa0, fa0, fa0
+	fsgnjx.s	ft1, fa0, fa0
 	la	t6, l.ftoi_cmp
 	flw	ft0, 0(t6)
 	li	t4, 1258291200
-	flt.s	t3, fa0, ft0
+	flt.s	t3, ft1, ft0
 	beq	t3, zero, ftoi_else
-	fadd.s	fa0, fa0, ft0
-	fmv.x.s	a0, fa0
+	fadd.s	ft1, ft1, ft0
+	fmv.w.s	a0, ft1
 	sub	a0, a0, t4
 	beq	t2, zero, ftoi_end
 	sub	a0, zero, a0
@@ -96,14 +98,14 @@ ftoi_end:
 ftoi_else:
 	li	t5, 0
 ftoi_cont:
-	flt.s	t3, fa0, ft0
+	flt.s	t3, ft1, ft0
 	bne	t3, zero, ftoi_sum
-	fsub.s	fa0, fa0, ft0
+	fsub.s	ft1, ft1, ft0
 	addi	t5, t5, 1
 	j	ftoi_cont
 ftoi_sum:
-	fadd.s	fa0, fa0, ft0
-	fmv.x.s	a0, fa0
+	fadd.s	ft1, ft1, ft0
+	fmv.w.s	a0, ft1
 	sub	a0, a0, t4
 	li	t4, 8388608
 ftoi_loop:
@@ -140,21 +142,21 @@ min_caml_floor:
 floor_ret:
 	ret
 
-	.globl	min_caml_fiszero
+	.globl min_caml_fiszero
 min_caml_fiszero:
 	la	t2, l.zero
 	flw	ft0, 0(t2)
 	feq.s	a0, fa0, ft0
 	ret
 
-	.globl	min_caml_fispos
+	.globl min_caml_fispos
 min_caml_fispos:
 	la	t2, l.zero
 	flw	ft0, 0(t2)
 	flt.s	a0, ft0, fa0
 	ret
 
-	.globl	min_caml_fneg
+	.globl min_caml_fneg
 min_caml_fneg:
 	fsgnjn.s	fa0, fa0, fa0
 	ret

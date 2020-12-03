@@ -23,6 +23,22 @@ l.n.120:	# 120.000000
 	.word	0x42f00000
 l.six:	# 6.000000
 	.word	0x40c00000
+l.atan_kernel.3:	# -0.3333333
+	.word	0xbeaaaaaa
+l.atan_kernel.5:	# 0.2
+	.word	0x3e4ccccd
+l.atan_kernel.7:	# -0.142857142
+	.word	0xbe124925
+l.atan_kernel.9:	# 0.111111104
+	.word	0x3de38e38
+l.atan_kernel.11:	# -0.08976446
+	.word	0xbdb7d66e
+l.atan_kernel.13:	#  0.060035485
+	.word	0x3d75e7c5
+l.atan_cmp.1:	# 0.4375
+	.word	0x3ee00000
+l.atan_cmp.2:	# 2.4375
+	.word	0x401c0000
 
 	.text
 reduction:
@@ -163,3 +179,82 @@ cos_else2:
 cos_else3:
 	fsub.s	fa0, ft1, fa0
 	j	kernel_sin
+
+kernel_atan:
+	fsgnj.s	ft0, fa0, fa0
+	fmul.s	ft1, fa0, fa0
+	la	t2, l.atan_kernel.3
+	fmul.s	ft0, ft0, ft1
+	flw	ft2, 0(t2)
+	fmul.s	ft2, ft2, ft0
+	fadd.s	fa0, fa0, ft2
+	la	t2, l.atan_kernel.5
+	fmul.s	ft0, ft0, ft1
+	flw	ft2, 0(t2)
+	fmul.s	ft2, ft2, ft0
+	fadd.s	fa0, fa0, ft2
+	la	t2, l.atan_kernel.7
+	fmul.s	ft0, ft0, ft1
+	flw	ft2, 0(t2)
+	fmul.s	ft2, ft2, ft0
+	fadd.s	fa0, fa0, ft2
+	la	t2, l.atan_kernel.9
+	fmul.s	ft0, ft0, ft1
+	flw	ft2, 0(t2)
+	fmul.s	ft2, ft2, ft0
+	fadd.s	fa0, fa0, ft2
+	la	t2, l.atan_kernel.11
+	fmul.s	ft0, ft0, ft1
+	flw	ft2, 0(t2)
+	fmul.s	ft2, ft2, ft0
+	fadd.s	fa0, fa0, ft2
+	la	t2, l.atan_kernel.13
+	fmul.s	ft0, ft0, ft1
+	flw	ft2, 0(t2)
+	fmul.s	ft2, ft2, ft0
+	fadd.s	fa0, fa0, ft2
+	ret
+
+	.globl min_caml_aton
+min_caml_atan:
+	fsgnj.s	ft4, fa0, fa0
+	fsgnjx.s	ft3, fa0, fa0
+	la	t2, l.atan_cmp.1
+	flw	ft1, 0(t2)
+	flt.s	t2, ft3, ft1
+	beq	t2, zero, atan_else.1
+	j	kernel_atan
+atan_else.1:
+	la	t2, l.atan_cmp.2
+	flw	ft1, 0(t2)
+	flt.s	t2, ft3, ft1
+	beq	t2, zero, atan_else.2
+	la	t3, l.one
+	flw	ft2, 0(t3)
+	fsub.s	fa0, ft3, ft2
+	fadd.s	ft2, ft3, ft2
+	fdiv.s	fa0, fa0, ft2
+	sw	ra, 4(s0)
+	addi	s0, s0, 8
+	jal	kernel_atan
+	addi	s0, s0, -8
+	lw	ra, 4(s0)
+	la	t2, l.qpi
+	flw	ft1, 0(t2)
+	fadd.s	fa0, fa0, ft1
+	fsgnj.s	fa0, fa0, ft4
+	ret
+atan_else.2:
+	la	t3, l.one
+	flw	ft2, 0(t3)
+	fdiv.s	fa0, ft2, ft3
+	sw	ra, 4(s0)
+	addi	s0, s0, 8
+	jal	kernel_atan
+	addi	s0, s0, -8
+	lw	ra, 4(s0)
+	la	t2, l.hpi
+	flw	ft1, 0(t2)
+	fsub.s	fa0, ft1, fa0
+	fsgnj.s	fa0, fa0, ft4
+	ret
