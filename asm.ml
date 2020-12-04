@@ -27,8 +27,8 @@ and exp =
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
-  | IfFEq of Id.t * Id.t * Id.t * t * t
-  | IfFLE of Id.t * Id.t * Id.t * t * t
+  | IfFEq of Id.t * Id.t * t * t
+  | IfFLE of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
   | CallCls of Id.t * Id.t list * Id.t list
   | CallDir of Id.l * Id.t list * Id.t list
@@ -53,7 +53,7 @@ let reg_sp = "s0" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
 let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dynamically.(See Notability for more info) *)
 (*TODO: is is_reg*)
-let is_reg x = List.mem x allregs || List.mem x allfregs || x = reg_hp
+let is_reg x = List.mem x allregs || List.mem x allfregs || x = reg_buf || x = reg_sp || x = reg_ra || x = reg_hp
 
 (* super-tenuki *)
 let rec remove_and_uniq xs = function
@@ -63,22 +63,17 @@ let rec remove_and_uniq xs = function
 
 (* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
 let rec fv_exp = function
-  | Nop | Set (_) | Restore(_) -> []
-  | SetL(_) -> []
+  | Nop | Set (_) | Restore(_) | SetL(_) -> []
   (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
-  | FMov(x) | FNeg(x) | Save(x, _) -> [x]
-  | Add(x, y) -> x :: [y]
-  | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
-  | Sub(x, y) -> x :: [y]
-  | Ld(x, y', _) -> x :: fv_id_or_imm y'
-  | LdF(x, y', _) -> x :: fv_id_or_imm y'
-  | St(x, y, z') -> x :: y :: fv_id_or_imm z'
-  | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
+  | FMov(x) | FNeg(x) | Save(x, _) | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
+  | Add(x, y) | Sub(x, y) -> x :: [y]
+  | Ld(x, y', _) | LdF(x, y', _) -> x :: fv_id_or_imm y'
+  | St(x, y, z') | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
   (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
-  | IfFEq(x, y, cmp, e1, e2) | IfFLE(x, y, cmp, e1, e2) -> x :: y :: cmp :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
+  | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
   | CallCls(x, ys, zs) -> x :: ys @ zs
   | CallDir(_, ys, zs) -> ys @ zs
 and fv = function
@@ -91,5 +86,3 @@ let rec concat e1 xt e2 =
   match e1 with
   | Ans(exp) -> Let(xt, exp, e2)
   | Let(yt, exp, e1') -> Let(yt, exp, concat e1' xt e2)
-
-let align i = (if i mod 8 = 0 then i else i + 4)

@@ -5,7 +5,9 @@ let rec g env = function
   | Let((x, t), Set(i), e) ->
     (* Format.eprintf "found simm %s = %d@." x i; *)
     let e' = g (M.add x i env) e in
-    if List.mem x (fv e') then Let((x, t), Set(i), e') else
+    if List.mem x (fv e') then
+      Let((x, t), Set(i), e')
+    else
       ((* Format.eprintf "erased redundant Set to %s@." x; *)
         e')
   | Let(xt, exp, e) -> Let(xt, g' env exp, g env e)
@@ -19,8 +21,8 @@ and g' env = function
   | IfEq(x, y', e1, e2) -> IfEq(x, y', g env e1, g env e2)
   | IfLE(x, y', e1, e2) -> IfLE(x, y', g env e1, g env e2)
   (*| IfGE(x, y', e1, e2) -> IfGE(x, y', g env e1, g env e2)*)
-  | IfFEq(x, y, cmp, e1, e2) -> IfFEq(x, y, cmp, g env e1, g env e2)
-  | IfFLE(x, y, cmp, e1, e2) -> IfFLE(x, y, cmp, g env e1, g env e2)
+  | IfFEq(x, y, e1, e2) -> IfFEq(x, y, g env e1, g env e2)
+  | IfFLE(x, y, e1, e2) -> IfFLE(x, y, g env e1, g env e2)
   | e -> e
 
 let h { name = l; args = xs; fargs = ys; body = e; ret = t } =

@@ -20,7 +20,7 @@ let locate x =
     | y :: zs -> List.map succ (loc zs) in
   loc !stackmap
 let offset x = 4 * List.hd (locate x)
-let stacksize () = align (List.length !stackmap * 4)
+let stacksize () = (List.length !stackmap * 4)
 
 let pp_id_or_imm = function
   | V(x) -> x
@@ -153,18 +153,18 @@ and g' oc = function
     g'_tail_if oc x y e1 e2 "be" "bne"
   | Tail, IfLE(x, y, e1, e2) ->
     g'_tail_if oc y x e1 e2 "bge" "blt"
-  | Tail, IfFEq(x, y, cmp, e1, e2) ->
-    g'_tail_float_if oc x y cmp e1 e2 "feq.s"
-  | Tail, IfFLE(x, y, cmp, e1, e2) ->
-    g'_tail_float_if oc x y cmp e1 e2 "fle.s"
+  | Tail, IfFEq(x, y, e1, e2) ->
+    g'_tail_float_if oc x y e1 e2 "feq.s"
+  | Tail, IfFLE(x, y, e1, e2) ->
+    g'_tail_float_if oc x y e1 e2 "fle.s"
   | NonTail(z), IfEq(x, y, e1, e2) ->
     g'_non_tail_if oc (NonTail(z)) x y e1 e2 "be" "bne"
   | NonTail(z), IfLE(x, y, e1, e2) ->
     g'_non_tail_if oc (NonTail(z)) y x e1 e2 "bge" "blt"
-  | NonTail(z), IfFEq(x, y, cmp, e1, e2) ->
-    g'_non_tail_float_if oc (NonTail(z)) x y cmp e1 e2 "feq.s"
-  | NonTail(z), IfFLE(x, y, cmp, e1, e2) ->
-    g'_non_tail_float_if oc (NonTail(z)) x y cmp e1 e2 "fle.s"
+  | NonTail(z), IfFEq(x, y, e1, e2) ->
+    g'_non_tail_float_if oc (NonTail(z)) x y e1 e2 "feq.s"
+  | NonTail(z), IfFLE(x, y, e1, e2) ->
+    g'_non_tail_float_if oc (NonTail(z)) x y e1 e2 "fle.s"
   | Tail, CallCls(x, ys, zs) ->
     g'_args oc [(x, reg_cl)] ys zs;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" reg_buf reg_cl;
@@ -205,10 +205,10 @@ and g'_tail_if oc x y e1 e2 b bn =
   Printf.fprintf oc "%s:\n" b_else;
   stackset := stackset_back;
   g oc (Tail, e2)
-and g'_tail_float_if oc x y cmp e1 e2 b =
+and g'_tail_float_if oc x y e1 e2 b =
   let b_else = Id.genid (b ^ "_else") in
-  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b cmp x y;
-  Printf.fprintf oc "\tbeq\t%s, zero, %s\n" cmp b_else;
+  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b reg_buf x y;
+  Printf.fprintf oc "\tbeq\t%s, zero, %s\n" reg_buf b_else;
   let stackset_back = !stackset in
   g oc (Tail, e1);
   Printf.fprintf oc "%s:\n" b_else;
@@ -228,11 +228,11 @@ and g'_non_tail_if oc dest x y e1 e2 b bn =
   Printf.fprintf oc "%s:\n" b_cont;
   let stackset2 = !stackset in
   stackset := S.inter stackset1 stackset2
-and g'_non_tail_float_if oc dest x y cmp e1 e2 b =
+and g'_non_tail_float_if oc dest x y e1 e2 b =
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
-  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b cmp x y;
-  Printf.fprintf oc "\tbeq\t%s, zero, %s\n" cmp b_else;
+  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b reg_buf x y;
+  Printf.fprintf oc "\tbeq\t%s, zero, %s\n" reg_buf b_else;
   let stackset_back = !stackset in
   g oc (dest, e1);
   let stackset1 = !stackset in

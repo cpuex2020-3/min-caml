@@ -13,7 +13,7 @@ let rec target' src (dest, t) = function
     let c1, rs1 = target src (dest, t) e1 in
     let c2, rs2 = target src (dest, t) e2 in
     c1 && c2, rs1 @ rs2
-  | IfFEq(_, _, _, e1, e2) | IfFLE(_, _, _, e1, e2) ->
+  | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
     let c1, rs1 = target src (dest, t) e1 in
     let c2, rs2 = target src (dest, t) e2 in
     c1 && c2, rs1 @ rs2
@@ -41,24 +41,11 @@ and target_args src all n = function (* auxiliary function for Call *)
   | y :: ys when src = y (* && n <= List.length all - 2 *) ->
     all.(n) :: target_args src all (n + 1) ys
   | _ :: ys -> target_args src all (n + 1) ys
-(* "register sourcing" (?) as opposed to register targeting *)
-let rec source t = function
-  | Ans(exp) -> source' t exp
-  | Let(_, _, e) -> source t e
-and source' t = function
-  | Mov(x) | Neg(x) | AddI(x, _) | Mul(x, _) | Div(x, _) | FMov(x) | FNeg(x) -> [x]
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FMul(x, y) | FSub(x, y) | FDiv(x, y) -> [x; y]
-  | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfFEq(_, _, _, e1, e2) | IfFLE(_, _, _, e1, e2) ->
-    source t e1 @ source t e2
-  (*| IfGE(_, _, e1, e2) ->*)
-  (*source t e1 @ source t e2*)
-  | CallCls _ | CallDir _ -> (match t with Type.Unit -> [] | Type.Float -> [fregs.(0)] | _ -> [regs.(0)])
-  | _ -> []
 
 type alloc_result =
   | Alloc of Id.t (* allocated register *)
   | Spill of Id.t (* spilled variable *)
-let rec alloc cont regenv x t prefer =
+let rec alloc dest cont regenv x t =
   (* allocate a register or spill a variable *)
   assert (not (M.mem x regenv));
   let all =
@@ -67,13 +54,18 @@ let rec alloc cont regenv x t prefer =
     | Type.Float -> allfregs
     | _ -> allregs in
   if all = [] then Alloc("%unit") else (* [XX] ad hoc *)
-  if is_reg x then Alloc(x) else
+  if is_reg x then
+    Alloc(x)
+  else
     let free = fv cont in
     try
+      let (c, prefer) = target x dest cont in
       let live =
         List.fold_left
           (fun live y ->
-             if is_reg y then S.add y live else
+             if is_reg y then
+               S.add y live
+             else
                try S.add (M.find y regenv) live
                with Not_found -> live)
           S.empty
@@ -98,7 +90,9 @@ let rec alloc cont regenv x t prefer =
 
 (* auxiliary function for g and g'_and_restore *)
 let add x r regenv =
-  if is_reg x then (assert (x = r); regenv) else
+  if is_reg x then
+    (assert (x = r); regenv)
+  else
     M.add x r regenv
 
 (* auxiliary functions for g' *)
@@ -118,9 +112,7 @@ let rec g dest cont regenv = function
     assert (not (M.mem x regenv));
     let cont' = concat e dest cont in
     let (e1', regenv1) = g'_and_restore xt cont' regenv exp in
-    let (_call, targets) = target x dest cont' in
-    let sources = source t e1' in
-    (match alloc cont' regenv1 x t (targets @ sources) with
+    (match alloc dest cont' regenv1 x t with
      | Spill(y) ->
        let r = M.find y regenv1 in
        let (e2', regenv2) = g dest cont (add x r (M.remove y regenv1)) e in
@@ -137,8 +129,7 @@ and g'_and_restore dest cont regenv exp =
     ((* Format.eprintf "restoring %s@." x; *)
       g dest cont regenv (Let((x, t), Restore(x), Ans(exp))))
 and g' dest cont regenv = function
-  | Nop | Set _ | Restore _ as exp -> (Ans(exp), regenv)
-  | SetL _ as exp -> (Ans(exp), regenv)
+  | Nop | Set _ | SetL _ | Restore _ as exp -> (Ans(exp), regenv)
   (*| Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
@@ -162,8 +153,8 @@ and g' dest cont regenv = function
   | IfLE(x, y, e1, e2) as exp ->
     g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2
   (*| IfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2*)
-  | IfFEq(x, y, cmp, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, cmp, e1', e2')) e1 e2
-  | IfFLE(x, y, cmp, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, cmp, e1', e2')) e1 e2
+  | IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
+  | IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
   | CallCls(x, ys, zs) as exp ->
     if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
@@ -185,7 +176,9 @@ and g'_if dest cont regenv exp constr e1 e2 =
            if is_reg x then regenv' else
              let r1 = M.find x regenv1 in
              let r2 = M.find x regenv2 in
-             if r1 <> r2 then regenv' else
+             if r1 <> r2 then
+               regenv'
+             else
                M.add x r1 regenv'
          with Not_found -> regenv')
       M.empty
