@@ -1,3 +1,6 @@
+import sys
+
+
 # cf) https://www.geeksforgeeks.org/python-program-to-represent-floating-number-as-hexadecimal-by-ieee-754-standard/
 
 def float_bin(my_number, places=3):
@@ -51,7 +54,7 @@ def IEEE754(n):
     return final
 
 
-with open('./base.sld') as f:
+with open(sys.argv[1]) as f:
     b = 0xffffffff
     for line in f:
         ints = map(lambda n: float(n) if '.' in n else int(n), line.split())

@@ -5,3 +5,4 @@ tmp*
 *.s
 !lib.s
 !tri.s
+out.ppm
