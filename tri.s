@@ -97,10 +97,12 @@ kernel_cos:
 	fadd.s	fa0, fa0, ft2
 	la	t6, l.cos_4
 	flw	ft2, 0(t6)
+	fmul.s	ft0, ft0, ft1
 	fmul.s	ft2, ft2, ft0
 	fadd.s	fa0, fa0, ft2
 	la	t6, l.cos_6
 	flw	ft2, 0(t6)
+	fmul.s	ft0, ft0, ft1
 	fmul.s	ft2, ft2, ft0
 	fadd.s	fa0, fa0, ft2
 	fsgnj.s	fa0, fa0, ft4

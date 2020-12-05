@@ -100,7 +100,7 @@ min_caml_int_of_float:
 	flt.s	t3, ft1, ft0
 	beq	t3, zero, ftoi_else
 	fadd.s	ft1, ft1, ft0
-	fmv.w.s	a0, ft1
+	fmv.x.s	a0, ft1
 	sub	a0, a0, t4
 	beq	t2, zero, ftoi_end
 	sub	a0, zero, a0
@@ -116,7 +116,7 @@ ftoi_cont:
 	j	ftoi_cont
 ftoi_sum:
 	fadd.s	ft1, ft1, ft0
-	fmv.w.s	a0, ft1
+	fmv.x.s	a0, ft1
 	sub	a0, a0, t4
 	li	t4, 8388608
 ftoi_loop:
