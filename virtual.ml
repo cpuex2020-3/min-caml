@@ -32,7 +32,7 @@ let expand xts ini addf addi =
 
 let rec g env = function
   | Closure.Unit -> Ans(Nop)
-  | Closure.Int(i) -> Ans(Set(i))
+  | Closure.Int(i) -> Ans(Seti(i))
   | Closure.Float(d) ->
     let l =
       try
@@ -42,8 +42,7 @@ let rec g env = function
         let l = Id.L(Id.genid "l") in
         data := (l, d) :: !data;
         l in
-    let x = Id.genid "l" in
-    Let((x, Type.Int), SetL(l), Ans(LdF(x, C(0), 1)))
+    Ans(SetFi(l))
   | Closure.Neg(x) -> Ans(Neg(x))
   | Closure.Add(x, y) -> Ans(Add(x, y))
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
@@ -112,16 +111,21 @@ let rec g env = function
         (0, g (M.add_list xts env) e2)
         (fun x offset load ->
            if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)
-             fletd(x, LdF(y, C(offset), 1), load))
+             fletd(x, LdF(y, C(offset)), load))
         (fun x t offset load ->
            if not (S.mem x s) then load else (* [XX] a little ad hoc optimization *)
-             Let((x, t), Ld(y, C(offset), 1), load)) in
+             Let((x, t), Ld(y, C(offset)), load)) in
     load
   | Closure.Get(x, y) ->
+    let offset = Id.genid "o" in
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
-     | Type.Array(Type.Float) -> Ans(LdF(x, V(y), 4))
-     | Type.Array(_) -> Ans(Ld(x, V(y), 4))
+     | Type.Array(Type.Float) ->
+       Let((offset, Type.Int), Mul(y, 4),
+           Ans(LdF(x, V(offset))))
+     | Type.Array(_) ->
+       Let((offset, Type.Int), Mul(y, 4),
+           Ans(Ld(x, V(offset))))
      | _ -> assert false)
   | Closure.Put(x, y, z) ->
     let offset = Id.genid "o" in
@@ -142,8 +146,8 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
     expand
       zts
       (4, g (M.add x t (M.add_list yts (M.add_list zts M.empty))) e)
-      (fun z offset load -> fletd(z, LdF(x, C(offset), 1), load))
-      (fun z t offset load -> Let((z, t), Ld(x, C(offset), 1), load)) in
+      (fun z offset load -> fletd(z, LdF(x, C(offset)), load))
+      (fun z t offset load -> Let((z, t), Ld(x, C(offset)), load)) in
   match t with
   | Type.Fun(_, t2) ->
     { name = Id.L(x); args = int; fargs = float; body = load; ret = t2 }

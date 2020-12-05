@@ -4,7 +4,8 @@ type t =
   | Let of (Id.t * Type.t) * exp * t
 and exp =
   | Nop
-  | Set of int
+  | Seti of int
+  | SetFi of Id.l
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
@@ -14,7 +15,7 @@ and exp =
   | Mul of Id.t * int
   | Div of Id.t * int
   (* TODO: handle with id instead of id_or_imm. handling in emit can cause error. e.g. register dependencies *)
-  | Ld of Id.t * id_or_imm * int
+  | Ld of Id.t * id_or_imm
   | St of Id.t * Id.t * id_or_imm
   | FMov of Id.t
   | FNeg of Id.t
@@ -22,7 +23,7 @@ and exp =
   | FSub of  Id.t * Id.t
   | FMul of  Id.t * Id.t
   | FDiv of  Id.t * Id.t
-  | LdF of Id.t * id_or_imm * int
+  | LdF of Id.t * id_or_imm
   | StF of Id.t * Id.t * id_or_imm
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t
@@ -63,12 +64,12 @@ let rec remove_and_uniq xs = function
 
 (* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
 let rec fv_exp = function
-  | Nop | Set (_) | Restore(_) | SetL(_) -> []
+  | Nop | Seti (_) | SetFi (_) | Restore(_) | SetL(_) -> []
   (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
   | FMov(x) | FNeg(x) | Save(x, _) | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
   | Add(x, y) | Sub(x, y) -> x :: [y]
-  | Ld(x, y', _) | LdF(x, y', _) -> x :: fv_id_or_imm y'
+  | Ld(x, y') | LdF(x, y') -> x :: fv_id_or_imm y'
   | St(x, y, z') | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)

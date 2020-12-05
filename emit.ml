@@ -48,7 +48,10 @@ let rec g oc = function
     g oc (dest, e)
 and g' oc = function
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
+  | NonTail(x), Seti(i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
+  | NonTail(x), SetFi(Id.L(l)) ->
+    Printf.fprintf oc "\tla\t%s, %s\n" reg_buf l;
+    Printf.fprintf oc "\tflw\t%s, 0(%s)\n" x reg_buf
   | NonTail(x), SetL(Id.L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | NonTail(x), Mov(y) ->
     if x <> y then
@@ -78,15 +81,9 @@ and g' oc = function
       Printf.fprintf oc "\tsrli\t%s, %s, 2\n" x y
     else
       raise (Failure "Unhandled divider")
-  | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (j * i) y
-  | NonTail(x), Ld(y, V(z), i) ->
-    if i = 4 then
-      Printf.fprintf oc "\tslli\t%s, %s, 2\n" reg_buf z
-    else if i = 8 then
-      Printf.fprintf oc "\tslli\t%s, %s, 3\n" reg_buf z
-    else
-      raise (Failure "Unhandled size in Ld; emit.ml");
-    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y reg_buf;
+  | NonTail(x), Ld(y, C(j)) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x j y
+  | NonTail(x), Ld(y, V(z)) ->
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" x reg_buf
   | NonTail(_), St(x, y, C(j)) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x j y
   | NonTail(_), St(x, y, V(z)) ->
@@ -101,14 +98,10 @@ and g' oc = function
   | NonTail(x), FSub(y, z) -> Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
   | NonTail(x), FMul(y, z) -> Printf.fprintf oc "\tfmul.s\t%s, %s, %s\n" x y z
   | NonTail(x), FDiv(y, z) -> Printf.fprintf oc "\tfdiv.s\t%s, %s, %s\n" x y z
-  | NonTail(x), LdF(y, V(z), i) ->
-    if i = 4 then
-      Printf.fprintf oc "\tslli\t%s, %s, 2\n" reg_buf z
-    else
-      raise (Failure "Unhandled size in LdDF; emit.ml");
-    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y reg_buf;
+  | NonTail(x), LdF(y, V(z)) ->
+    Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;
     Printf.fprintf oc "\tflw\t%s, 0(%s)\n" x reg_buf
-  | NonTail(x), LdF(y, C(j), i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(x), LdF(y, C(j)) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x j y
   | NonTail(_), StF(x, y, V(z)) ->
     Printf.fprintf oc "\tadd\t%s, %s, %s\n" reg_buf y z;
     Printf.fprintf oc "\tfsw\t%s, 0(%s)\n" x reg_buf
@@ -128,7 +121,7 @@ and g' oc = function
   | Tail, (Nop | St _ | StF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
+  | Tail, (Seti _ | SetFi _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _  as exp) ->

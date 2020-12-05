@@ -129,7 +129,7 @@ and g'_and_restore dest cont regenv exp =
     ((* Format.eprintf "restoring %s@." x; *)
       g dest cont regenv (Let((x, t), Restore(x), Ans(exp))))
 and g' dest cont regenv = function
-  | Nop | Set _ | SetL _ | Restore _ as exp -> (Ans(exp), regenv)
+  | Nop | Seti _ | SetFi _ | SetL _ | Restore _ as exp -> (Ans(exp), regenv)
   (*| Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
@@ -138,7 +138,7 @@ and g' dest cont regenv = function
   | Sub(x, y) -> (Ans(Sub(find x Type.Int regenv, find y Type.Int regenv)), regenv)
   | Mul(x, i) -> (Ans(Mul(find x Type.Int regenv, i)), regenv)
   | Div(x, i) -> (Ans(Div(find x Type.Int regenv, i)), regenv)
-  | Ld(x, y', i) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, i)), regenv)
+  | Ld(x, y') -> (Ans(Ld(find x Type.Int regenv, find' y' regenv)), regenv)
   | St(x, y, z') -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv)), regenv)
   | FMov(x) -> (Ans(FMov(find x Type.Float regenv)), regenv)
   | FNeg(x) -> (Ans(FNeg(find x Type.Float regenv)), regenv)
@@ -146,7 +146,7 @@ and g' dest cont regenv = function
   | FSub(x, y) -> (Ans(FSub(find x Type.Float regenv, find y Type.Float regenv)), regenv)
   | FMul(x, y) -> (Ans(FMul(find x Type.Float regenv, find y Type.Float regenv)), regenv)
   | FDiv(x, y) -> (Ans(FDiv(find x Type.Float regenv, find y Type.Float regenv)), regenv)
-  | LdF(x, y', i) -> (Ans(LdF(find x Type.Int regenv, find' y' regenv, i)), regenv)
+  | LdF(x, y') -> (Ans(LdF(find x Type.Int regenv, find' y' regenv)), regenv)
   | StF(x, y, z') -> (Ans(StF(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv)), regenv)
   | IfEq(x, y, e1, e2) as exp ->
     g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2

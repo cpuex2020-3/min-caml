@@ -2,11 +2,11 @@ open Asm
 
 let rec g env = function
   | Ans(exp) -> Ans(g' env exp)
-  | Let((x, t), Set(i), e) ->
+  | Let((x, t), Seti(i), e) ->
     (* Format.eprintf "found simm %s = %d@." x i; *)
     let e' = g (M.add x i env) e in
     if List.mem x (fv e') then
-      Let((x, t), Set(i), e')
+      Let((x, t), Seti(i), e')
     else
       ((* Format.eprintf "erased redundant Set to %s@." x; *)
         e')
@@ -14,9 +14,9 @@ let rec g env = function
 and g' env = function
   | Add(x, y) when M.mem y env -> AddI(x, M.find y env)
   | Add(x, y) when M.mem x env -> AddI(y, M.find x env)
-  | Ld(x, V(y), i) when M.mem y env -> Ld(x, C(M.find y env), i)
+  | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env))
   | St(x, y, V(z)) when M.mem z env -> St(x, y, C(M.find z env))
-  | LdF(x, V(y), i) when M.mem y env -> LdF(x, C(M.find y env), i)
+  | LdF(x, V(y)) when M.mem y env -> LdF(x, C(M.find y env))
   | StF(x, y, V(z)) when M.mem z env -> StF(x, y, C(M.find z env))
   | IfEq(x, y', e1, e2) -> IfEq(x, y', g env e1, g env e2)
   | IfLE(x, y', e1, e2) -> IfLE(x, y', g env e1, g env e2)

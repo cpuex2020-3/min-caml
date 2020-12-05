@@ -4,7 +4,8 @@ type t =
   | Let of (Id.t * Type.t) * exp * t
 and exp =
   | Nop
-  | Set of int
+  | Seti of int
+  | SetFi of Id.l
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
@@ -13,7 +14,7 @@ and exp =
   | Sub of Id.t * Id.t
   | Mul of Id.t * int
   | Div of Id.t * int
-  | Ld of Id.t * id_or_imm * int
+  | Ld of Id.t * id_or_imm
   | St of Id.t * Id.t * id_or_imm
   | FMov of Id.t
   | FNeg of Id.t
@@ -21,7 +22,7 @@ and exp =
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
-  | LdF of Id.t * id_or_imm * int
+  | LdF of Id.t * id_or_imm
   | StF of Id.t * Id.t * id_or_imm
   (*| Comment of string*)
   (* virtual instructions *)
