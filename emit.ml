@@ -39,13 +39,6 @@ let rec shuffle sw xys =
          xys)
   | xys, acyc -> acyc @ shuffle sw xys
 
-let rec omit_paren s =
-  try
-    let lparen = String.index s '(' in
-    let rparen = String.index s ')' in
-    String.sub s (lparen + 1) (rparen - lparen - 1)
-  with Not_found -> raise (Failure "no parenthesis.")
-
 type dest = Tail | NonTail of Id.t
 
 let rec g oc = function
@@ -101,10 +94,8 @@ and g' oc = function
     Printf.fprintf oc "\tsw\t%s, 0(%s)\n" x reg_buf
   | NonTail(x), FMov(y) ->
     if x <> y then
-      if List.mem x allfregs then
-        Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" x y y
-      else
-        Printf.fprintf oc "\tfcvt.w.s\t%s, %s\n" x y
+      (assert (List.mem x allfregs);
+       Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" x y y)
   | NonTail(x), FNeg(y) -> Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y y;
   | NonTail(x), FAdd(y, z) -> Printf.fprintf oc "\tfadd.s\t%s, %s, %s\n" x y z
   | NonTail(x), FSub(y, z) -> Printf.fprintf oc "\tfsub.s\t%s, %s, %s\n" x y z
