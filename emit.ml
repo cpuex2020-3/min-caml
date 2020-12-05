@@ -59,8 +59,8 @@ and g' oc = function
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y;
     Printf.fprintf oc "\tsub\t%s, zero, %s\n" x x
-  | NonTail(x), Add(y, z) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
-  | NonTail(x), AddI(y, i) ->
+  | NonTail(x), Add(y, V(z)) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
+  | NonTail(x), Add(y, C(i)) ->
     if i > 2047 then
       (Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
        Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y reg_buf)
@@ -75,9 +75,9 @@ and g' oc = function
     else
       raise (Failure "Unhandled multiplier")
   | NonTail(x), Div(y, i) ->
-    if i == 2 then
+    if i = 2 then
       Printf.fprintf oc "\tsrli\t%s, %s, 1\n" x y
-    else if i == 4 then
+    else if i = 4 then
       Printf.fprintf oc "\tsrli\t%s, %s, 2\n" x y
     else
       raise (Failure "Unhandled divider")
@@ -121,7 +121,7 @@ and g' oc = function
   | Tail, (Nop | St _ | StF _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (Seti _ | SetFi _ | SetL _ | Mov _ | Neg _ | Add _ | AddI _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
+  | Tail, (Seti _ | SetFi _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _  as exp) ->
@@ -133,18 +133,34 @@ and g' oc = function
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
     Printf.fprintf oc "\tret\n"
-  | Tail, IfEq(x, y, e1, e2) ->
-    g'_tail_if oc x y e1 e2 "be" "bne"
-  | Tail, IfLE(x, y, e1, e2) ->
-    g'_tail_if oc y x e1 e2 "bge" "blt"
+  | Tail, IfEq(x, y', e1, e2) ->
+    (match y' with
+     | V(y) -> g'_tail_if oc x y e1 e2 "bne"
+     | C(i) ->
+       Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       g'_tail_if oc x reg_buf e1 e2 "bne")
+  | Tail, IfLE(x, y', e1, e2) ->
+    (match y' with
+     | V(y) -> g'_tail_if oc y x e1 e2 "blt"
+     | C(i) ->
+       Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       g'_tail_if oc reg_buf x e1 e2 "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
     g'_tail_float_if oc x y e1 e2 "feq.s"
   | Tail, IfFLE(x, y, e1, e2) ->
     g'_tail_float_if oc x y e1 e2 "fle.s"
-  | NonTail(z), IfEq(x, y, e1, e2) ->
-    g'_non_tail_if oc (NonTail(z)) x y e1 e2 "be" "bne"
-  | NonTail(z), IfLE(x, y, e1, e2) ->
-    g'_non_tail_if oc (NonTail(z)) y x e1 e2 "bge" "blt"
+  | NonTail(z), IfEq(x, y', e1, e2) ->
+    (match y' with
+     | V(y) -> g'_non_tail_if oc (NonTail(z)) x y e1 e2 "bne"
+     | C(i) ->
+       Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       g'_non_tail_if oc (NonTail(z)) x reg_buf e1 e2 "bne")
+  | NonTail(z), IfLE(x, y', e1, e2) ->
+    (match y' with
+     | V(y) -> g'_non_tail_if oc (NonTail(z)) y x e1 e2 "blt"
+     | C(i) ->
+       Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       g'_non_tail_if oc (NonTail(z)) reg_buf x e1 e2 "blt")
   | NonTail(z), IfFEq(x, y, e1, e2) ->
     g'_non_tail_float_if oc (NonTail(z)) x y e1 e2 "feq.s"
   | NonTail(z), IfFLE(x, y, e1, e2) ->
@@ -181,8 +197,8 @@ and g' oc = function
       Printf.fprintf oc "\tmv\t%s, %s\n" a regs.(0)
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" a fregs.(0) fregs.(0)
-and g'_tail_if oc x y e1 e2 b bn =
-  let b_else = Id.genid (b ^ "_else") in
+and g'_tail_if oc x y e1 e2 bn =
+  let b_else = Id.genid (bn ^ "_stands") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
   let stackset_back = !stackset in
   g oc (Tail, e1);
@@ -198,9 +214,9 @@ and g'_tail_float_if oc x y e1 e2 b =
   Printf.fprintf oc "%s:\n" b_else;
   stackset := stackset_back;
   g oc (Tail, e2)
-and g'_non_tail_if oc dest x y e1 e2 b bn =
-  let b_else = Id.genid (b ^ "_else") in
-  let b_cont = Id.genid (b ^ "_cont") in
+and g'_non_tail_if oc dest x y e1 e2 bn =
+  let b_else = Id.genid (bn ^ "_stands") in
+  let b_cont = Id.genid (bn ^ "_cont") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
   let stackset_back = !stackset in
   g oc (dest, e1);

@@ -9,8 +9,7 @@ and exp =
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t
-  | AddI of Id.t * int
+  | Add of Id.t * id_or_imm
   | Sub of Id.t * Id.t
   | Mul of Id.t * int
   | Div of Id.t * int
@@ -26,8 +25,8 @@ and exp =
   | LdF of Id.t * id_or_imm
   | StF of Id.t * Id.t * id_or_imm
   (* virtual instructions *)
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
+  | IfEq of Id.t * id_or_imm * t * t
+  | IfLE of Id.t * id_or_imm * t * t
   | IfFEq of Id.t * Id.t * t * t
   | IfFLE of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
@@ -41,7 +40,6 @@ type prog = Prog of (Id.l * float) list * fundef list * t
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
-let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let regs = [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7" ; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11" |]
 let fregs = [| "fa0"; "fa1"; "fa2"; "fa3"; "fa4"; "fa5"; "fa6"; "fa7"; "fs0"; "fs1"; "fs2"; "fs3"; "fs4"; "fs5"; "fs6"; "fs7"; "fs8"; "fs9"; "fs10"; "fs11" |]
 let allregs = Array.to_list regs
@@ -53,8 +51,7 @@ let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_sp = "s0" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
 let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dynamically.(See Notability for more info) *)
-(*TODO: is is_reg*)
-let is_reg x = List.mem x allregs || List.mem x allfregs || x = reg_buf || x = reg_sp || x = reg_ra || x = reg_hp
+let is_reg x = List.mem x allregs || List.mem x allfregs || x = reg_sp || x = reg_ra || x = reg_hp
 
 (* super-tenuki *)
 let rec remove_and_uniq xs = function
@@ -63,17 +60,17 @@ let rec remove_and_uniq xs = function
   | x :: ys -> x :: remove_and_uniq (S.add x xs) ys
 
 (* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
+let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Seti (_) | SetFi (_) | Restore(_) | SetL(_) -> []
   (*| Comment(_) -> []*)
   | Neg(x) | Mov(x) -> [x]
-  | FMov(x) | FNeg(x) | Save(x, _) | AddI(x, _) | Mul(x, _) | Div(x, _) -> [x]
-  | Add(x, y) | Sub(x, y) -> x :: [y]
-  | Ld(x, y') | LdF(x, y') -> x :: fv_id_or_imm y'
+  | FMov(x) | FNeg(x) | Save(x, _) | Mul(x, _) | Div(x, _) -> [x]
+  | Add(x, y') | Ld(x, y') | LdF(x, y') -> x :: fv_id_or_imm y'
+  | Sub(x, y) -> x :: [y]
   | St(x, y, z') | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
-  | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: y' :: remove_and_uniq S.empty (fv e1 @ fv e2)
-  (*| IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)*)
+  | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
   | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
   | CallCls(x, ys, zs) -> x :: ys @ zs
   | CallDir(_, ys, zs) -> ys @ zs

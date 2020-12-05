@@ -2,7 +2,7 @@
 
 open Asm
 
-let data = ref []
+let data = ref [] (* Table for floating point. *)
 
 let classify xts ini addf addi =
   List.fold_left
@@ -25,10 +25,8 @@ let expand xts ini addf addi =
   classify
     xts
     ini
-    (fun (offset, acc) x ->
-       (offset + 4, addf x offset acc))
-    (fun (offset, acc) x t ->
-       (offset + 4, addi x t offset acc))
+    (fun (offset, acc) x -> (offset + 4, addf x offset acc))
+    (fun (offset, acc) x t -> (offset + 4, addi x t offset acc))
 
 let rec g env = function
   | Closure.Unit -> Ans(Nop)
@@ -44,7 +42,7 @@ let rec g env = function
         l in
     Ans(SetFi(l))
   | Closure.Neg(x) -> Ans(Neg(x))
-  | Closure.Add(x, y) -> Ans(Add(x, y))
+  | Closure.Add(x, y) -> Ans(Add(x, V(y)))
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
   | Closure.Mul(x, y) -> Ans(Mul(x, y))
   | Closure.Div(x, y) -> Ans(Div(x, y))
@@ -55,12 +53,12 @@ let rec g env = function
   | Closure.FDiv(x, y) -> Ans(FDiv(x, y))
   | Closure.IfEq(x, y, e1, e2) ->
     (match M.find x env with
-     | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2))
+     | Type.Bool | Type.Int -> Ans(IfEq(x, V(y), g env e1, g env e2))
      | Type.Float -> Ans(IfFEq(x, y, g env e1, g env e2))
      | _ -> failwith "equality supported only for bool, int, and float")
   | Closure.IfLE(x, y, e1, e2) ->
     (match M.find x env with
-     | Type.Bool | Type.Int -> Ans(IfLE(x, y, g env e1, g env e2))
+     | Type.Bool | Type.Int -> Ans(IfLE(x, V(y), g env e1, g env e2))
      | Type.Float -> Ans(IfFLE(x, y, g env e1, g env e2))
      | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2) ->
@@ -72,16 +70,16 @@ let rec g env = function
      | Type.Unit -> Ans(Nop)
      | Type.Float -> Ans(FMov(x))
      | _ -> Ans(Mov(x)))
-  | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (*(caml2html: virtual_makecls) *)
+  | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) ->
     let e2' = g (M.add x t env) e2 in
-    let offset, store_fv =
+    let (offset, store_fv) =
       expand
         (List.map (fun y -> (y, M.find y env)) ys)
         (4, e2')
         (fun y offset store_fv -> seq(StF(y, x, C(offset)), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset)), store_fv)) in
     Let((x, t), Mov(reg_hp),
-        Let((reg_hp, Type.Int), AddI(reg_hp, offset), (* TODO: if imm was bigger than 1 << 12... *)
+        Let((reg_hp, Type.Int), Add(reg_hp, C(offset)),
             let z = Id.genid "l" in
             Let((z, Type.Int), SetL(l),
                 seq(St(z, x, C(0)),
@@ -101,7 +99,7 @@ let rec g env = function
         (fun x offset store -> seq(StF(x, y, C(offset)), store))
         (fun x _ offset store -> seq(St(x, y, C(offset)), store)) in
     Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
-        Let((reg_hp, Type.Int), AddI(reg_hp, offset), (* TODO: if imm was bigger than 1 << 12... *)
+        Let((reg_hp, Type.Int), Add(reg_hp, C(offset)),
             store))
   | Closure.LetTuple(xts, y, e2) ->
     let s = Closure.fv e2 in

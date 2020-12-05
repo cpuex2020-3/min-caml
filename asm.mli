@@ -9,8 +9,7 @@ and exp =
   | SetL of Id.l
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t
-  | AddI of Id.t * int
+  | Add of Id.t * id_or_imm
   | Sub of Id.t * Id.t
   | Mul of Id.t * int
   | Div of Id.t * int
@@ -26,9 +25,8 @@ and exp =
   | StF of Id.t * Id.t * id_or_imm
   (*| Comment of string*)
   (* virtual instructions *)
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
-  (*| IfGE of Id.t * id_or_imm * t * t*)
+  | IfEq of Id.t * id_or_imm * t * t
+  | IfLE of Id.t * id_or_imm * t * t
   | IfFEq of Id.t * Id.t * t * t
   | IfFLE of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
