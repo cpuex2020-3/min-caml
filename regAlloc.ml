@@ -167,7 +167,9 @@ and g'_if dest cont regenv exp constr e1 e2 =
     List.fold_left
       (fun regenv' x ->
          try
-           if is_reg x then regenv' else
+           if is_reg x then
+             regenv'
+           else
              let r1 = M.find x regenv1 in
              let r2 = M.find x regenv2 in
              if r1 <> r2 then
@@ -179,7 +181,9 @@ and g'_if dest cont regenv exp constr e1 e2 =
       (fv cont) in
   (List.fold_left
      (fun e x ->
-        if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then e else
+        if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then
+          e
+        else
           seq(Save(M.find x regenv, x), e))
      (Ans(constr e1' e2'))
      (fv cont),
@@ -187,7 +191,9 @@ and g'_if dest cont regenv exp constr e1 e2 =
 and g'_call dest cont regenv exp constr ys zs =
   (List.fold_left
      (fun e x ->
-        if x = fst dest || not (M.mem x regenv) then e else
+        if x = fst dest || not (M.mem x regenv) then
+          e
+        else
           seq(Save(M.find x regenv, x), e))
      (Ans(constr
             (List.map (fun y -> find y Type.Int regenv) ys)
