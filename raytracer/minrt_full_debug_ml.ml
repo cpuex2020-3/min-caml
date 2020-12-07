@@ -586,22 +586,22 @@ let rec read_screen_settings _ =
 
   (* スクリーン中心の座標 *)
   screen.(0) <- read_float ();
-  print_int(int_of_float screen.(0));
+  print_float screen.(0);
   print_newline();
   screen.(1) <- read_float ();
-  print_int(int_of_float screen.(1));
+  print_float screen.(1);
   print_newline();
   screen.(2) <- read_float ();
-  print_int(int_of_float screen.(2));
+  print_float screen.(2);
   print_newline();
   (* 回転角 *)
   let v1 = rad (read_float ()) in
-  print_int(int_of_float v1);
+  print_float v1;
   print_newline();
   let cos_v1 = cos v1 in
   let sin_v1 = sin v1 in
   let v2 = rad (read_float ()) in
-  print_int(int_of_float v2);
+  print_float v2;
   print_newline();
   let cos_v2 = cos v2 in
   let sin_v2 = sin v2 in
@@ -633,12 +633,12 @@ let rec read_light _ =
 
   (* 光線関係 *)
   let l1 = rad (read_float ()) in
-  print_int(int_of_float l1);
+  print_float l1;
   print_newline();
   let sl1 = sin l1 in
   light.(1) <- fneg sl1;
   let l2 = rad (read_float ()) in
-  print_int(int_of_float l2);
+  print_float l2;
   print_newline();
   let cl1 = cos l1 in
   let sl2 = sin l2 in
@@ -646,7 +646,7 @@ let rec read_light _ =
   let cl2 = cos l2 in
   light.(2) <- cl1 *. cl2;
   beam.(0) <- read_float ();
-  print_int(int_of_float beam.(0));
+  print_float beam.(0);
   print_newline();
 
 in
@@ -715,60 +715,61 @@ let rec read_nth_object n =
 
       let abc = Array.make 3 0.0 in
       abc.(0) <- read_float ();
-      print_int(int_of_float abc.(0));
+      print_float abc.(0);
       print_newline();
       abc.(1) <- read_float (); (* 5 *)
-      print_int(int_of_float abc.(1));
+      print_float abc.(1);
       print_newline();
       abc.(2) <- read_float ();
-      print_int(int_of_float abc.(2));
+      print_float abc.(2);
       print_newline();
 
       let xyz = Array.make 3 0.0 in
       xyz.(0) <- read_float ();
-      print_int(int_of_float xyz.(0));
+      print_float xyz.(0);
       print_newline();
       xyz.(1) <- read_float ();
-      print_int(int_of_float xyz.(1));
+      print_float xyz.(1);
       print_newline();
       xyz.(2) <- read_float ();
-      print_int(int_of_float xyz.(2));
+      print_float xyz.(2);
       print_newline();
 
-      let m_invert = fisneg (read_float ()) in (* 10 *)
-      print_int (if m_invert then 1 else 0);
+      let a = read_float() in
+      print_float a;
+      let m_invert = fisneg (a) in (* 10 *)
       print_newline();
 
       let reflparam = Array.make 2 0.0 in
       reflparam.(0) <- read_float (); (* diffuse *)
-      print_int(int_of_float reflparam.(0));
+      print_float reflparam.(0);
       print_newline();
       reflparam.(1) <- read_float (); (* hilight *)
-      print_int(int_of_float reflparam.(1));
+      print_float reflparam.(1);
       print_newline();
 
       let color = Array.make 3 0.0 in
       color.(0) <- read_float ();
-      print_int(int_of_float color.(0));
+      print_float color.(0);
       print_newline();
       color.(1) <- read_float ();
-      print_int(int_of_float color.(1));
+      print_float color.(1);
       print_newline();
       color.(2) <- read_float (); (* 15 *)
-      print_int(int_of_float color.(2));
+      print_float color.(2);
       print_newline();
 
       let rotation = Array.make 3 0.0 in
       if isrot_p <> 0 then
         (
           rotation.(0) <- rad (read_float ());
-          print_int(int_of_float rotation.(0));
+          print_float rotation.(0);
           print_newline();
           rotation.(1) <- rad (read_float ());
-          print_int(int_of_float rotation.(1));
+          print_float rotation.(1);
           print_newline();
           rotation.(2) <- rad (read_float ());
-          print_int(int_of_float rotation.(2));
+          print_float rotation.(2);
           print_newline();
         )
       else ();

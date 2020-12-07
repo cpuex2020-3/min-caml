@@ -3,91 +3,91 @@
 (**************** グローバル変数の宣言 ****************)
 
 (* オブジェクトの個数 *)
-let n_objects = Array.make 1 0 in
+let n_objects = create_array 1 0 in
 
 (* オブジェクトのデータを入れるベクトル（最大60個）*)
 let objects =
-  let dummy = Array.make 0 0.0 in
-  Array.make 60 (0, 0, 0, 0, dummy, dummy, false, dummy, dummy, dummy, dummy) in
+  let dummy = create_array 0 0.0 in
+  create_array 60 (0, 0, 0, 0, dummy, dummy, false, dummy, dummy, dummy, dummy) in
 
 (* Screen の中心座標 *)
-let screen = Array.make 3 0.0 in
+let screen = create_array 3 0.0 in
 (* 視点の座標 *)
-let viewpoint = Array.make 3 0.0 in
+let viewpoint = create_array 3 0.0 in
 (* 光源方向ベクトル (単位ベクトル) *)
-let light = Array.make 3 0.0 in
+let light = create_array 3 0.0 in
 (* 鏡面ハイライト強度 (標準=255) *)
-let beam = Array.make 1 255.0 in
+let beam = create_array 1 255.0 in
 (* AND ネットワークを保持 *)
-let and_net = Array.make 50 (Array.make 1 (-1)) in
+let and_net = create_array 50 (create_array 1 (-1)) in
 (* OR ネットワークを保持 *)
-let or_net = Array.make 1 (Array.make 1 (and_net.(0))) in
+let or_net = create_array 1 (create_array 1 (and_net.(0))) in
 
 (* 以下、交差判定ルーチンの返り値格納用 *)
 (* solver の交点 の t の値 *)
-let solver_dist = Array.make 1 0.0 in
+let solver_dist = create_array 1 0.0 in
 (* 交点の直方体表面での方向 *)
-let intsec_rectside = Array.make 1 0 in
+let intsec_rectside = create_array 1 0 in
 (* 発見した交点の最小の t *)
-let tmin = Array.make 1 (1000000000.0) in
+let tmin = create_array 1 (1000000000.0) in
 (* 交点の座標 *)
-let intersection_point = Array.make 3 0.0 in
+let intersection_point = create_array 3 0.0 in
 (* 衝突したオブジェクト番号 *)
-let intersected_object_id = Array.make 1 0 in
+let intersected_object_id = create_array 1 0 in
 (* 法線ベクトル *)
-let nvector = Array.make 3 0.0 in
+let nvector = create_array 3 0.0 in
 (* 交点の色 *)
-let texture_color = Array.make 3 0.0 in
+let texture_color = create_array 3 0.0 in
 
 (* 計算中の間接受光強度を保持 *)
-let diffuse_ray = Array.make 3 0.0 in
+let diffuse_ray = create_array 3 0.0 in
 (* スクリーン上の点の明るさ *)
-let rgb = Array.make 3 0.0 in
+let rgb = create_array 3 0.0 in
 
 (* 画像サイズ *)
-let image_size = Array.make 2 0 in
+let image_size = create_array 2 0 in
 (* 画像の中心 = 画像サイズの半分 *)
-let image_center = Array.make 2 0 in
+let image_center = create_array 2 0 in
 (* 3次元上のピクセル間隔 *)
-let scan_pitch = Array.make 1 0.0 in
+let scan_pitch = create_array 1 0.0 in
 
 (* judge_intersectionに与える光線始点 *)
-let startp = Array.make 3 0.0 in
+let startp = create_array 3 0.0 in
 (* judge_intersection_fastに与える光線始点 *)
-let startp_fast = Array.make 3 0.0 in
+let startp_fast = create_array 3 0.0 in
 
 (* 画面上のx,y,z軸の3次元空間上の方向 *)
-let screenx_dir = Array.make 3 0.0 in
-let screeny_dir = Array.make 3 0.0 in
-let screenz_dir = Array.make 3 0.0 in
+let screenx_dir = create_array 3 0.0 in
+let screeny_dir = create_array 3 0.0 in
+let screenz_dir = create_array 3 0.0 in
 
 (* 直接光追跡で使う光方向ベクトル *)
-let ptrace_dirvec  = Array.make 3 0.0 in
+let ptrace_dirvec  = create_array 3 0.0 in
 
 (* 間接光サンプリングに使う方向ベクトル *)
 let dirvecs =
-  let dummyf = Array.make 0 0.0 in
-  let dummyff = Array.make 0 dummyf in
-  let dummy_vs = Array.make 0 (dummyf, dummyff) in
-  Array.make 5 dummy_vs in
+  let dummyf = create_array 0 0.0 in
+  let dummyff = create_array 0 dummyf in
+  let dummy_vs = create_array 0 (dummyf, dummyff) in
+  create_array 5 dummy_vs in
 
 (* 光源光の前処理済み方向ベクトル *)
 let light_dirvec =
-  let dummyf2 = Array.make 0 0.0 in
-  let v3 = Array.make 3 0.0 in
-  let consts = Array.make 60 dummyf2 in
+  let dummyf2 = create_array 0 0.0 in
+  let v3 = create_array 3 0.0 in
+  let consts = create_array 60 dummyf2 in
   (v3, consts) in
 
 (* 鏡平面の反射情報 *)
 let reflections =
-  let dummyf3 = Array.make 0 0.0 in
-  let dummyff3 = Array.make 0 dummyf3 in
+  let dummyf3 = create_array 0 0.0 in
+  let dummyff3 = create_array 0 dummyf3 in
   let dummydv = (dummyf3, dummyff3) in
-  Array.make 180 (0, dummydv, 0.0) in
+  create_array 180 (0, dummydv, 0.0) in
 
 (* reflectionsの有効な要素数 *)
 
-let n_reflections = Array.make 1 0 in
+let n_reflections = create_array 1 0 in
 (****************************************************************)
 (*                                                              *)
 (* Ray Tracing Program for (Mini) Objective Caml                *)
@@ -101,21 +101,13 @@ let n_reflections = Array.make 1 0 in
 
 (*NOMINCAML open MiniMLRuntime;;*)
 (*NOMINCAML open Globals;;*)
+(*MINCAML*) let true = 1 in
+(*MINCAML*) let false = 0 in
 (*MINCAML*) let rec xor x y = if x then not y else y in
 
 (******************************************************************************
    ユーティリティー
  *****************************************************************************)
-
-let rec fiszero f = f = 0.0 in
-let rec fispos f = f > 0.0 in
-let rec fisneg f = f < 0.0 in
-let rec fless f1 f2 = f1 < f2 in
-let rec fabs f = if f < 0.0 then -.f else f in
-let rec fneg f = -. f in
-let rec fsqr f = f *. f in
-let rec fhalf f = f /. 2.0 in
-let rec print_char i = Printf.printf "%c" (Char.chr i) in
 
 (* 符号 *)
 let rec sgn x =
@@ -586,21 +578,26 @@ let rec read_screen_settings _ =
 
   (* スクリーン中心の座標 *)
   screen.(0) <- read_float ();
+  print_char 35;
   print_int(int_of_float screen.(0));
   print_newline();
   screen.(1) <- read_float ();
+  print_char 35;
   print_int(int_of_float screen.(1));
   print_newline();
   screen.(2) <- read_float ();
+  print_char 35;
   print_int(int_of_float screen.(2));
   print_newline();
   (* 回転角 *)
   let v1 = rad (read_float ()) in
+  print_char 35;
   print_int(int_of_float v1);
   print_newline();
   let cos_v1 = cos v1 in
   let sin_v1 = sin v1 in
   let v2 = rad (read_float ()) in
+  print_char 35;
   print_int(int_of_float v2);
   print_newline();
   let cos_v2 = cos v2 in
@@ -633,12 +630,14 @@ let rec read_light _ =
 
   (* 光線関係 *)
   let l1 = rad (read_float ()) in
-  print_int(int_of_float l1);
+  print_char 35;
+  print_int (int_of_float l1);
   print_newline();
   let sl1 = sin l1 in
   light.(1) <- fneg sl1;
   let l2 = rad (read_float ()) in
-  print_int(int_of_float l2);
+  print_char 35;
+  print_int (int_of_float l2);
   print_newline();
   let cl1 = cos l1 in
   let sl2 = sin l2 in
@@ -646,6 +645,7 @@ let rec read_light _ =
   let cl2 = cos l2 in
   light.(2) <- cl1 *. cl2;
   beam.(0) <- read_float ();
+  print_char 35;
   print_int(int_of_float beam.(0));
   print_newline();
 
@@ -713,61 +713,76 @@ let rec read_nth_object n =
       print_int isrot_p;
       print_newline();
 
-      let abc = Array.make 3 0.0 in
+      let abc = create_array 3 0.0 in
       abc.(0) <- read_float ();
+      print_char 35;
       print_int(int_of_float abc.(0));
       print_newline();
       abc.(1) <- read_float (); (* 5 *)
+      print_char 35;
       print_int(int_of_float abc.(1));
       print_newline();
       abc.(2) <- read_float ();
+      print_char 35;
       print_int(int_of_float abc.(2));
       print_newline();
 
-      let xyz = Array.make 3 0.0 in
+      let xyz = create_array 3 0.0 in
       xyz.(0) <- read_float ();
+      print_char 35;
       print_int(int_of_float xyz.(0));
       print_newline();
       xyz.(1) <- read_float ();
+      print_char 35;
       print_int(int_of_float xyz.(1));
       print_newline();
       xyz.(2) <- read_float ();
+      print_char 35;
       print_int(int_of_float xyz.(2));
       print_newline();
 
       let m_invert = fisneg (read_float ()) in (* 10 *)
-      print_int (if m_invert then 1 else 0);
+      print_char 35;
+      print_int(if m_invert then 1 else 0);
       print_newline();
 
-      let reflparam = Array.make 2 0.0 in
+      let reflparam = create_array 2 0.0 in
       reflparam.(0) <- read_float (); (* diffuse *)
+      print_char 35;
       print_int(int_of_float reflparam.(0));
       print_newline();
       reflparam.(1) <- read_float (); (* hilight *)
+      print_char 35;
       print_int(int_of_float reflparam.(1));
       print_newline();
 
-      let color = Array.make 3 0.0 in
+      let color = create_array 3 0.0 in
       color.(0) <- read_float ();
+      print_char 35;
       print_int(int_of_float color.(0));
       print_newline();
       color.(1) <- read_float ();
+      print_char 35;
       print_int(int_of_float color.(1));
       print_newline();
       color.(2) <- read_float (); (* 15 *)
+      print_char 35;
       print_int(int_of_float color.(2));
       print_newline();
 
-      let rotation = Array.make 3 0.0 in
+      let rotation = create_array 3 0.0 in
       if isrot_p <> 0 then
         (
           rotation.(0) <- rad (read_float ());
+          print_char 35;
           print_int(int_of_float rotation.(0));
           print_newline();
           rotation.(1) <- rad (read_float ());
+          print_char 35;
           print_int(int_of_float rotation.(1));
           print_newline();
           rotation.(2) <- rad (read_float ());
+          print_char 35;
           print_int(int_of_float rotation.(2));
           print_newline();
         )
@@ -777,7 +792,7 @@ let rec read_nth_object n =
 
       (* 注: 下記正規化 (form = 2) 参照 *)
       let m_invert2 = if form = 2 then true else m_invert in
-      let ctbl = Array.make 4 0.0 in
+      let ctbl = create_array 4 0.0 in
       (* ここからあとは abc と rotation しか操作しない。*)
       let obj =
         (texture, form, refltype, isrot_p,
@@ -837,7 +852,7 @@ let rec read_net_item length =
   let item = read_int () in
   print_int item;
   print_newline();
-  if item = -1 then Array.make (length + 1) (-1)
+  if item = -1 then create_array (length + 1) (-1)
   else
     let v = read_net_item (length + 1) in
     (v.(length) <- item; v)
@@ -846,7 +861,7 @@ in
 let rec read_or_network length =
   let net = read_net_item 0 in
   if net.(0) = -1 then
-    Array.make (length + 1) net
+    create_array (length + 1) net
   else
     let v = read_or_network (length + 1) in
     (v.(length) <- net; v)
@@ -1156,7 +1171,7 @@ in
 
 (* 直方体オブジェクトに対する前処理 *)
 let rec setup_rect_table vec m =
-  let const = Array.make 6 0.0 in
+  let const = create_array 6 0.0 in
 
   if fiszero vec.(0) then (* YZ平面 *)
     const.(1) <- 0.0
@@ -1183,7 +1198,7 @@ in
 
 (* 平面オブジェクトに対する前処理 *)
 let rec setup_surface_table vec m =
-  let const = Array.make 4 0.0 in
+  let const = create_array 4 0.0 in
   let d =
     vec.(0) *. o_param_a m +. vec.(1) *. o_param_b m +. vec.(2) *. o_param_c m
   in
@@ -1202,7 +1217,7 @@ in
 
 (* 2次曲面に対する前処理 *)
 let rec setup_second_table v m =
-  let const = Array.make 5 0.0 in
+  let const = create_array 5 0.0 in
 
   let aa = quadratic m v.(0) v.(1) v.(2) in
   let c1 = fneg (v.(0) *. o_param_a m) in
@@ -2090,7 +2105,7 @@ in
 
 let rec write_rgb_element x =
   let ix = int_of_float x in
-  let elem = if ix > 255 then 255 else if ix < -10 then 0 else ix in
+  let elem = if ix > 255 then 255 else if ix < 0 then 0 else ix in
   print_int elem
 in
 
@@ -2221,25 +2236,25 @@ in
 
 (* 3次元ベクトルの5要素配列を割り当て *)
 let rec create_float5x3array _ = (
-  let vec = Array.make 3 0.0 in
-  let array = Array.make 5 vec in
-  array.(1) <- Array.make 3 0.0;
-  array.(2) <- Array.make 3 0.0;
-  array.(3) <- Array.make 3 0.0;
-  array.(4) <- Array.make 3 0.0;
+  let vec = create_array 3 0.0 in
+  let array = create_array 5 vec in
+  array.(1) <- create_array 3 0.0;
+  array.(2) <- create_array 3 0.0;
+  array.(3) <- create_array 3 0.0;
+  array.(4) <- create_array 3 0.0;
   array
 )
 in
 
 (* ピクセルを表すtupleを割り当て *)
 let rec create_pixel _ =
-  let m_rgb = Array.make 3 0.0 in
+  let m_rgb = create_array 3 0.0 in
   let m_isect_ps = create_float5x3array() in
-  let m_sids = Array.make 5 0 in
-  let m_cdif = Array.make 5 false in
+  let m_sids = create_array 5 0 in
+  let m_cdif = create_array 5 false in
   let m_engy = create_float5x3array() in
   let m_r20p = create_float5x3array() in
-  let m_gid = Array.make 1 0 in
+  let m_gid = create_array 1 0 in
   let m_nvectors = create_float5x3array() in
   (m_rgb, m_isect_ps, m_sids, m_cdif, m_engy, m_r20p, m_gid, m_nvectors)
 in
@@ -2255,7 +2270,7 @@ in
 
 (* 横方向1ライン分のピクセル配列を作る *)
 let rec create_pixelline _ =
-  let line = Array.make image_size.(0) (create_pixel()) in
+  let line = create_array image_size.(0) (create_pixel()) in
   init_line_elements line (image_size.(0)-2)
 in
 
@@ -2331,8 +2346,8 @@ in
 
 
 let rec create_dirvec _ =
-  let v3 = Array.make 3 0.0 in
-  let consts = Array.make n_objects.(0) v3 in
+  let v3 = create_array 3 0.0 in
+  let consts = create_array n_objects.(0) v3 in
   (v3, consts)
 in
 
@@ -2345,7 +2360,7 @@ in
 
 let rec create_dirvecs index =
   if index >= 0 then (
-    dirvecs.(index) <- Array.make 120 (create_dirvec());
+    dirvecs.(index) <- create_array 120 (create_dirvec());
     create_dirvec_elements dirvecs.(index) 118;
     create_dirvecs (index-1)
   ) else ()
