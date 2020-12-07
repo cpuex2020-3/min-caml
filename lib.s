@@ -75,15 +75,17 @@ min_caml_truncate:
 	la	t2, l.zero
 	flw	ft0, 0(t2)
 	flt.s	t2, fa0, ft0
+	fsw	fa0, 4(s0)
 	fsgnjx.s	fa0, fa0, fa0
-	sw	ra,	4(s0)
-	sw	t2, 8(s0)
-	addi	s0, s0, 12
+	sw	ra,	8(s0)
+	sw	t2, 12(s0)
+	addi	s0, s0, 16
 	jal	min_caml_floor
 	jal	min_caml_int_of_float
-	addi	s0, s0, -12
-	lw	t2, 8(s0)
-	lw	ra,	4(s0)
+	addi	s0, s0, -16
+	lw	t2, 12(s0)
+	lw	ra,	8(s0)
+	flw	fa0, 4(s0)
 	beq	t2, zero, truncate_end
 	sub	a0, zero, a0
 truncate_end:
