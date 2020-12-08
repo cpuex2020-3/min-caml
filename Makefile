@@ -40,7 +40,7 @@ test/%.res: test/%.s
 test/%.ans: test/%.ml
 	ocaml $< > $@
 test/%.cmp: test/%.res test/%.ans
-	ghead -n -1 $< > tmp && mv tmp $<
+	ghead -n -2 $< > tmp && mv tmp $<
 	diff -w -B $^ > $@
 
 raytrace: $(RESULT)

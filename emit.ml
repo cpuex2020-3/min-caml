@@ -145,6 +145,12 @@ and g' oc = function
      | C(i) ->
        Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
        g'_tail_if oc reg_buf x e1 e2 "blt")
+  | Tail, IfGE(x, y', e1, e2) ->
+    (match y' with
+     | V(y) -> g'_tail_if oc x y e1 e2 "blt"
+     | C(i) ->
+       Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       g'_tail_if oc x reg_buf e1 e2 "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
     g'_tail_float_if oc x y e1 e2 "feq.s"
   | Tail, IfFLE(x, y, e1, e2) ->
@@ -161,6 +167,12 @@ and g' oc = function
      | C(i) ->
        Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
        g'_non_tail_if oc (NonTail(z)) reg_buf x e1 e2 "blt")
+  | NonTail(z), IfGE(x, y', e1, e2) ->
+    (match y' with
+     | V(y) -> g'_non_tail_if oc (NonTail(z)) x y e1 e2 "blt"
+     | C(i) ->
+       Printf.fprintf oc "\tli\t%s, %d\n" reg_buf i;
+       g'_non_tail_if oc (NonTail(z)) x reg_buf e1 e2 "blt")
   | NonTail(z), IfFEq(x, y, e1, e2) ->
     g'_non_tail_float_if oc (NonTail(z)) x y e1 e2 "feq.s"
   | NonTail(z), IfFLE(x, y, e1, e2) ->
