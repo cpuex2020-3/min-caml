@@ -19,7 +19,10 @@ let locate x =
     | y :: zs when x = y -> 0 :: List.map succ (loc zs)
     | y :: zs -> List.map succ (loc zs) in
   loc !stackmap
-let offset x = 4 * List.hd (locate x)
+let offset x =
+  match locate x with
+  | hd :: tl -> 4 * hd
+  | [] -> raise (Failure (Printf.sprintf "No such variable %s in stackset." x))
 let stacksize () = (List.length !stackmap * 4)
 
 let pp_id_or_imm = function
@@ -114,7 +117,10 @@ and g' oc = function
     Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   | NonTail(x), Restore(y) when List.mem x allregs ->
-    Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (offset y) reg_sp
+    if M.mem y !Virtual.globenv then
+      Printf.fprintf oc "\tla\t%s, %s\n" x y
+    else
+      Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(x), Restore(y) ->
     assert (List.mem x allfregs);
     Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (offset y) reg_sp
@@ -281,32 +287,83 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   stackmap := [];
   g oc (Tail, e)
 
-let f oc (Prog(data, fundefs, e)) =
-  let callee_saved_regs = ["s0"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"] in
-  let callee_saved_regs_count = List.length callee_saved_regs in
+let data_top = ref 100 (* .data starts from memory address 100. *)
+
+let rec select_const_array_and_tuple = function (* TODO: use filter *)
+  | hd :: tl ->
+    (match hd with
+     | KNormal.ConstArray(_) | KNormal.ConstTuple(_) -> hd :: select_const_array_and_tuple tl
+     | _ -> select_const_array_and_tuple tl)
+  | [] -> []
+
+let rec gen_global oc x = function
+  | KNormal.ConstArray(len, init) ->
+    (match init with
+     | ConstInt(_) | ConstFloat(_) ->
+       Printf.fprintf oc "%s:\n" x;
+       for cnt = 1 to len do
+         gen_global oc x init
+       done
+     | ConstBool(_) -> raise (Failure "Bool array??")
+     | ConstTuple(_) | ConstArray(_) ->
+       let head_addr = !data_top in
+       gen_global oc (Printf.sprintf "%s_init" x) init;
+       Printf.fprintf oc "%s:\n" x;
+       for cnt = 1 to len do
+         Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int head_addr); data_top := !data_top + 4
+       done)
+  | KNormal.ConstInt(i) ->
+    Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int i);
+    data_top := !data_top + 4
+  | KNormal.ConstBool(b) ->
+    Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0));
+    data_top := !data_top + 4
+  | KNormal.ConstFloat(f) ->
+    Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.bits_of_float f);
+    data_top := !data_top + 4
+  | KNormal.ConstTuple(cs) ->
+    let arrays = select_const_array_and_tuple cs in
+    let head_addresses = ref [] in
+    List.iteri
+      (fun i arr ->
+         (let head = !data_top in
+          head_addresses := head :: !head_addresses;
+          gen_global oc (Printf.sprintf "%s.arr_or_tpl.%d" x i) arr))
+      arrays;
+    head_addresses := List.rev !head_addresses;
+    Printf.fprintf oc "%s:\n" x;
+    let counter = ref 0 in
+    List.iter
+      (function
+        | KNormal.ConstInt(_) | KNormal.ConstFloat(_) as c ->
+          gen_global oc x c
+        | KNormal.ConstBool(b) -> Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0))
+        | KNormal.ConstArray(_) ->
+          Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (List.nth !head_addresses !counter));
+          counter := !counter + 1;
+        | KNormal.ConstTuple(_) ->
+          Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (List.nth !head_addresses !counter));
+          counter := !counter + 1)
+      cs
+
+let f oc (Prog(float_data, array_data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc "\t.data\n";
+  List.iter (fun (x, const_exp) -> gen_global oc x const_exp) array_data;
   List.iter
     (fun (Id.L(x), d) ->
        Printf.fprintf oc "%s:\t# %f\n" x d;
        Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.bits_of_float d))
-    data;
+    float_data;
   Printf.fprintf oc "\t.text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "\t.globl\tmin_caml_start\n";
   Printf.fprintf oc "min_caml_start:\n";
   Printf.fprintf oc "\taddi\tsp, sp, -52\n";
-  List.iteri
-    (fun i r -> Printf.fprintf oc "\tsw\t%s, %d(sp)\n" r ((callee_saved_regs_count - i) * 4))
-    callee_saved_regs;
   stackset := S.empty;
   stackmap := [];
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  (*Printf.fprintf oc "\tla\t%s, min_caml_hp\n" reg_hp;*)
   g oc (NonTail(regs.(0)), e);
-  List.iteri
-    (fun i r -> Printf.fprintf oc "\tlw\t%s, %d(sp)\n" r ((i + 1) * 4))
-    (List.rev callee_saved_regs);
   Printf.fprintf oc "\taddi\tsp, sp, 52\n";
   Printf.fprintf oc "\tret\n";

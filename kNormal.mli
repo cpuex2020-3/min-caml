@@ -1,3 +1,10 @@
+type const_exp =
+  | ConstInt of int
+  | ConstBool of bool
+  | ConstFloat of float
+  | ConstTuple of const_exp list
+  | ConstArray of int * const_exp (* length * init *)
+
 type t =
   | Unit
   | Int of int
@@ -15,6 +22,7 @@ type t =
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
   | Let of (Id.t * Type.t) * t * t
+  | GlobalLet of (Id.t * Type.t) * const_exp * t
   | Var of Id.t
   | LetRec of fundef * t
   | App of Id.t * Id.t list

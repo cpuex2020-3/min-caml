@@ -2,7 +2,8 @@
 
 open Asm
 
-let data = ref [] (* Table for floating point. *)
+let float_data = ref [] (* Table for floating points. *)
+let array_data = ref [] (* Table for global variables. *)
 
 let classify xts ini addf addi =
   List.fold_left
@@ -28,17 +29,27 @@ let expand xts ini addf addi =
     (fun (offset, acc) x -> (offset + 4, addf x offset acc))
     (fun (offset, acc) x t -> (offset + 4, addi x t offset acc))
 
+let globenv = ref M.empty
+
+let find_var x env =
+  if M.mem x env then
+    M.find x env
+  else if M.mem x !globenv then
+    M.find x !globenv
+  else
+    raise (Failure (Printf.sprintf "%s is not found." x))
+
 let rec g env = function
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Seti(i))
   | Closure.Float(d) ->
     let l =
       try
-        let (l, _) = List.find (fun (_, d') -> d = d') !data in
+        let (l, _) = List.find (fun (_, d') -> d = d') !float_data in
         l
       with Not_found ->
         let l = Id.L(Id.genid "l") in
-        data := (l, d) :: !data;
+        float_data := (l, d) :: !float_data;
         l in
     Ans(SetFi(l))
   | Closure.Neg(x) -> Ans(Neg(x))
@@ -65,6 +76,10 @@ let rec g env = function
     let e1' = g env e1 in
     let e2' = g (M.add x t1 env) e2 in
     concat e1' (x, t1) e2'
+  | Closure.GlobalLet((x, t1), const, e) ->
+    array_data := (x, const) :: !array_data;
+    globenv := M.add x t1 !globenv;
+    g env e
   | Closure.Var(x) ->
     (match M.find x env with
      | Type.Unit -> Ans(Nop)
@@ -74,7 +89,7 @@ let rec g env = function
     let e2' = g (M.add x t env) e2 in
     let (offset, store_fv) =
       expand
-        (List.map (fun y -> (y, M.find y env)) ys)
+        (List.map (fun y -> (y, find_var y env)) ys)
         (4, e2')
         (fun y offset store_fv -> seq(StF(y, x, C(offset)), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset)), store_fv)) in
@@ -85,20 +100,20 @@ let rec g env = function
                 seq(St(z, x, C(0)),
                     store_fv))))
   | Closure.AppCls(x, ys) ->
-    let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
+    let (int, float) = separate (List.map (fun y -> (y, find_var y env)) ys) in
     Ans(CallCls(x, int, float))
   | Closure.AppDir(Id.L(x), ys) ->
-    let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
+    let (int, float) = separate (List.map (fun y -> (y, find_var y env)) ys) in
     Ans(CallDir(Id.L(x), int, float))
   | Closure.Tuple(xs) ->
     let y = Id.genid "t" in
     let (offset, store) =
       expand
-        (List.map (fun x -> (x, M.find x env)) xs)
+        (List.map (fun x -> (x, find_var x env)) xs)
         (0, Ans(Mov(y)))
         (fun x offset store -> seq(StF(x, y, C(offset)), store))
         (fun x _ offset store -> seq(St(x, y, C(offset)), store)) in
-    Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp),
+    Let((y, Type.Tuple(List.map (fun x -> find_var x env) xs)), Mov(reg_hp),
         Let((reg_hp, Type.Int), Add(reg_hp, C(offset)),
             store))
   | Closure.LetTuple(xts, y, e2) ->
@@ -115,27 +130,64 @@ let rec g env = function
              Let((x, t), Ld(y, C(offset)), load)) in
     load
   | Closure.Get(x, y) ->
-    let offset = Id.genid "o" in
-    (match M.find x env with
-     | Type.Array(Type.Unit) -> Ans(Nop)
-     | Type.Array(Type.Float) ->
-       Let((offset, Type.Int), Mul(y, 4),
-           Ans(LdF(x, V(offset))))
-     | Type.Array(_) ->
-       Let((offset, Type.Int), Mul(y, 4),
-           Ans(Ld(x, V(offset))))
-     | _ -> assert false)
+    if M.mem x env then
+      let offset = Id.genid "o" in
+      match M.find x env with
+      | Type.Array(Type.Unit) -> Ans(Nop)
+      | Type.Array(Type.Float) ->
+        Let((offset, Type.Int), Mul(y, 4),
+            Ans(LdF(x, V(offset))))
+      | Type.Array(_) ->
+        Let((offset, Type.Int), Mul(y, 4),
+            Ans(Ld(x, V(offset))))
+      | _ -> assert false
+    else if M.mem x !globenv then
+      let addr = Id.genid "l" in
+      let offset = Id.genid "o" in
+      match M.find x !globenv with
+      | Type.Array(Type.Unit) -> Ans(Nop)
+      | Type.Array(Type.Float) ->
+        Let((addr, Type.Int), SetL(Id.L(x)),
+            Let((offset, Type.Int), Mul(y, 4),
+                Ans(LdF(addr, V(offset)))))
+      | Type.Array(_) ->
+        Let((addr, Type.Int), SetL(Id.L(x)),
+            Let((offset, Type.Int), Mul(y, 4),
+                Ans(Ld(addr, V(offset)))))
+      | _ -> raise (Failure "invalid type for global array.")
+    else
+      raise (Failure (Printf.sprintf "variable %s is not found anywhere in Get." x))
   | Closure.Put(x, y, z) ->
-    let offset = Id.genid "o" in
-    (match M.find x env with
-     | Type.Array(Type.Unit) -> Ans(Nop)
-     | Type.Array(Type.Float) ->
-       Let((offset, Type.Int), Mul(y, 4),
-           Ans(StF(z, x, V(offset))))
-     | Type.Array(_) ->
-       Let((offset, Type.Int), Mul(y, 4),
-           Ans(St(z, x, V(offset))))
-     | _ -> assert false)
+    if M.mem x env then
+      match M.find x env with
+      | Type.Array(Type.Unit) -> Ans(Nop)
+      | Type.Array(Type.Float) ->
+        let offset = Id.genid "o" in
+        Let((offset, Type.Int), Mul(y, 4),
+            Ans(StF(z, x, V(offset))))
+      | Type.Array(_) ->
+        let offset = Id.genid "o" in
+        Let((offset, Type.Int), Mul(y, 4),
+            Ans(St(z, x, V(offset))))
+      | _ -> assert false
+    else if M.mem x !globenv then
+      match M.find x !globenv with
+      | Type.Array(Type.Unit) -> Ans(Nop)
+      | Type.Array(Type.Float) ->
+        let addr = Id.genid "l" in
+        let offset = Id.genid "o" in
+        Let((addr, Type.Int), SetL(Id.L(x)),
+            Let((offset, Type.Int), Mul(y, 4),
+                Ans(StF(z, addr, V(offset)))))
+      | Type.Array(_) ->
+        let addr = Id.genid "l" in
+        let offset = Id.genid "o" in
+        Let((addr, Type.Int), SetL(Id.L(x)),
+            Let((offset, Type.Int), Mul(y, 4),
+                Ans(St(z, addr, V(offset)))))
+      | _ -> assert false
+    else
+      raise (Failure (Printf.sprintf "variable %s is not found anywhere in Put." x))
   | Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
 
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =
@@ -152,7 +204,6 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
   | _ -> assert false
 
 let f (Closure.Prog(fundefs, e)) =
-  data := [];
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
-  Prog(!data, fundefs, e)
+  Prog(!float_data, !array_data, fundefs, e)

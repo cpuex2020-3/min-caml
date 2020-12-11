@@ -52,8 +52,8 @@ let addtyp x = (x, Type.gentyp ())
 %left prec_app
 %left DOT
 
-%type <Syntax.t> exp
-%start exp
+%type <Syntax.t> toplevel
+%start toplevel
 
 %%
 
@@ -72,6 +72,14 @@ simple_exp:
     { Var($1) }
 | simple_exp DOT LPAREN exp RPAREN
     { Get($1, $4) }
+
+toplevel:
+| LET IDENT EQUAL exp toplevel
+    { GlobalLet(addtyp $2, $4, $5) }
+| LET IDENT EQUAL exp
+    { GlobalLet(addtyp $2, $4, Unit) }
+| exp
+    { $1 }
 
 exp:
 | simple_exp

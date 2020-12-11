@@ -23,6 +23,7 @@ let rec g env = function
   | Let((x, t), e1, e2) ->
     let x' = Id.genid x in
     Let((x', t), g env e1, g (M.add x x' env) e2)
+  | GlobalLet((x, t), e1, e2) -> raise (Failure "No need of alpha reduction for global variable.")
   | Var(x) -> Var(find x env)
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
     let env = M.add x (Id.genid x) env in
