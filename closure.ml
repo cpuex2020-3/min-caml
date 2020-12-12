@@ -16,6 +16,7 @@ type t =
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
   | Let of (Id.t * Type.t) * t * t
+  | GlobalLet of (Id.t * Type.t) * ConstExp.t * t
   | Var of Id.t
   | MakeCls of (Id.t * Type.t) * closure * t
   | AppCls of Id.t * Id.t list
@@ -31,19 +32,31 @@ type fundef = { name : Id.l * Type.t;
                 body : t }
 type prog = Prog of fundef list * t
 
+let rec filter_globals xs = List.filter (fun x -> not (M.mem x !Typing.globenv)) xs
+
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) ->
+    S.of_list (filter_globals [x; y])
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
-  | IfEq(x, y, e1, e2)| IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
+  | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
-  | Var(x) -> S.singleton x
-  | MakeCls((x, t), { entry = l; actual_fv = ys }, e) -> S.remove x (S.union (S.of_list ys) (fv e))
-  | AppCls(x, ys) -> S.of_list (x :: ys)
-  | AppDir(_, xs) | Tuple(xs) -> S.of_list xs
-  | LetTuple(xts, y, e) -> S.add y (S.diff (fv e) (S.of_list (List.map fst xts)))
-  | Put(x, y, z) -> S.of_list [x; y; z]
+  | GlobalLet((x, t), e1, e2) -> S.empty (* there should be no free variable in globals variables. *)
+  | Var(x) ->
+    if M.mem x !Typing.globenv then
+      S.empty
+    else
+      S.singleton x
+  | MakeCls((x, t), { entry = l; actual_fv = ys }, e) -> S.remove x (S.union (S.of_list (filter_globals ys)) (fv e))
+  | AppCls(x, ys) -> S.of_list (filter_globals (x :: ys))
+  | AppDir(_, xs) | Tuple(xs) -> S.of_list (filter_globals xs)
+  | LetTuple(xts, y, e) ->
+    if M.mem y !Typing.globenv then
+      S.diff (fv e) (S.of_list (filter_globals (List.map fst xts)))
+    else
+      S.add y (S.diff (fv e) (S.of_list (filter_globals (List.map fst xts))))
+  | Put(x, y, z) -> S.of_list (filter_globals [x; y; z])
 
 let toplevel : fundef list ref = ref []
 
@@ -64,6 +77,8 @@ let rec g env known = function
   | KNormal.IfEq(x, y, e1, e2) -> IfEq(x, y, g env known e1, g env known e2)
   | KNormal.IfLE(x, y, e1, e2) -> IfLE(x, y, g env known e1, g env known e2)
   | KNormal.Let((x, t), e1, e2) -> Let((x, t), g env known e1, g (M.add x t env) known e2)
+  | KNormal.GlobalLet((x, t), e1, e2) ->
+    GlobalLet((x, t), e1, g (M.add x t env) known e2)
   | KNormal.Var(x) -> Var(x)
   | KNormal.LetRec({ KNormal.name = (x, t); KNormal.args = yts; KNormal.body = e1 }, e2) ->
     let toplevel_backup = !toplevel in
@@ -71,15 +86,19 @@ let rec g env known = function
     let known' = S.add x known in
     let e1' = g (M.add_list yts env') known' e1 in
     let zs = S.diff (fv e1') (S.of_list (List.map fst yts)) in
-    let known', e1' =
-      if S.is_empty zs then known', e1' else
+    let (known', e1') =
+      if S.is_empty zs then
+        known', e1'
+      else
         (Format.eprintf "free variable(s) %s found in function %s@." (Id.pp_list (S.elements zs)) x;
          Format.eprintf "function %s cannot be directly applied in fact@." x;
          toplevel := toplevel_backup;
          let e1' = g (M.add_list yts env') known e1 in
          known, e1') in
     let zs = S.elements (S.diff (fv e1') (S.add x (S.of_list (List.map fst yts)))) in
-    let zts = List.map (fun z -> (z, M.find z env')) zs in
+    let zts = List.map
+        (fun z -> (z, try M.find z env' with Not_found -> raise(Failure (Printf.sprintf "var %s not found" z))))
+        zs in
     toplevel := { name = (Id.L(x), t); args = yts; formal_fv = zts; body = e1' } :: !toplevel;
     let e2' = g env' known' e2 in
     if S.mem x (fv e2') then
@@ -123,49 +142,48 @@ let rec print_t t depth =
   | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
   | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
   | FDiv (lhs, rhs) -> Printf.printf "FDIV %s %s\n" lhs rhs
-  | IfEq (lhs, rhs, thn, els) -> (
-      Printf.printf "IF %s = %s\n" lhs rhs;
-      print_t thn (depth + 1);
-      print_newline();
-      Printf.printf "ELSE\n";
-      print_t els (depth + 1);
-      print_newline();
-    )
-  | IfLE (lhs, rhs, thn, els) -> (
-      Printf.printf "IF %s <= %s\n" lhs rhs;
-      print_t thn (depth + 1);
-      print_newline();
-      Printf.printf "ELSE\n";
-      print_t els (depth + 1);
-      print_newline();
-    )
-  | Let ((id, ty), t1, t2) -> (
-      Printf.printf "LET %s TYPE: %s\n" id (Type.str ty);
-      print_t t1 (depth + 1);
-      print_newline();
-      print_t t2 (depth + 1);
-      print_newline();
-    )
+  | IfEq (lhs, rhs, thn, els) ->
+    Printf.printf "IF %s = %s\n" lhs rhs;
+    print_t thn (depth + 1);
+    print_newline();
+    Printf.printf "ELSE\n";
+    print_t els (depth + 1);
+    print_newline()
+  | IfLE (lhs, rhs, thn, els) ->
+    Printf.printf "IF %s <= %s\n" lhs rhs;
+    print_t thn (depth + 1);
+    print_newline();
+    Printf.printf "ELSE\n";
+    print_t els (depth + 1);
+    print_newline()
+  | Let ((id, ty), t1, t2) ->
+    Printf.printf "LET %s TYPE: %s\n" id (Type.str ty);
+    print_t t1 (depth + 1);
+    print_newline();
+    print_t t2 (depth + 1);
+    print_newline()
+  | GlobalLet ((id, ty), t1, t2) ->
+    Printf.printf "GLOBAL_LET %s TYPE: %s\n" id (Type.str ty);
+    print_newline();
+    print_t t2 (depth + 1);
+    print_newline()
   | Var (v) -> Printf.printf "VAR %s" v
-  | Tuple (li) -> (
-      Printf.printf "TUPLE [\n";
-      List.iter (fun arg -> (print_n_tabs (depth + 1); print_string arg; print_newline();)) li;
-      print_n_tabs depth;
-      Printf.printf "]\n";
-    )
-  | LetTuple (li, id, t) -> (
-      Printf.printf "LETTUPLE (\n";
-      List.iter (
-        fun arg -> (
-            let (id, ty) = arg in
-            print_n_tabs (depth + 1);
-            Printf.printf "ID: %s, TYPE: %s\n" id (Type.str ty);
-            print_newline();
-          )
-      ) li;
-      print_n_tabs depth;
-      Printf.printf ")\n";
-    )
+  | Tuple (li) ->
+    Printf.printf "TUPLE [\n";
+    List.iter (fun arg -> (print_n_tabs (depth + 1); print_string arg; print_newline();)) li;
+    print_n_tabs depth;
+    Printf.printf "]\n"
+  | LetTuple (li, id, t) ->
+    Printf.printf "LETTUPLE (\n";
+    List.iter
+      (fun arg ->
+         (let (id, ty) = arg in
+          print_n_tabs (depth + 1);
+          Printf.printf "ID: %s, TYPE: %s\n" id (Type.str ty);
+          print_newline()))
+      li;
+    print_n_tabs depth;
+    Printf.printf ")\n"
   | Get (t1, t2) -> Printf.printf "GET %s %s\n" t1 t2
   | Put (t1, t2, t3) -> Printf.printf "PUT %s %s %s\n" t1 t2 t3
   | ExtArray (t) -> let Id.L(s) = t in Printf.printf "EXTARRAY %s\n" s

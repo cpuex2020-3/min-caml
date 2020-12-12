@@ -36,7 +36,7 @@ and exp =
   | Save of Id.t * Id.t
   | Restore of Id.t
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
-type prog = Prog of (Id.l * float) list * fundef list * t
+type prog = Prog of (Id.l * float) list * (Id.t * ConstExp.t) list * fundef list * t
 
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
@@ -71,8 +71,10 @@ let rec fv_exp = function
   | Sub(x, y) -> x :: [y]
   | St(x, y, z') | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
-  | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) | IfGE(x, y', e1, e2) -> x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
-  | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
+  | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) | IfGE(x, y', e1, e2) ->
+    x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
+  | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) ->
+    x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
   | CallCls(x, ys, zs) -> x :: ys @ zs
   | CallDir(_, ys, zs) -> ys @ zs
 and fv = function

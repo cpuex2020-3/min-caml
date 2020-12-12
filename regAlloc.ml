@@ -191,17 +191,17 @@ and g'_if dest cont regenv exp constr e1 e2 =
      (fv cont),
    regenv')
 and g'_call dest cont regenv exp constr ys zs =
-  (List.fold_left
-     (fun e x ->
-        if x = fst dest || not (M.mem x regenv) then
-          e
-        else
-          seq(Save(M.find x regenv, x), e))
-     (Ans(constr
-            (List.map (fun y -> find y Type.Int regenv) ys)
-            (List.map (fun z -> find z Type.Float regenv) zs)))
-     (fv cont),
-   M.empty)
+  List.fold_left
+    (fun e x ->
+       if x = fst dest || not (M.mem x regenv) then
+         e
+       else
+         seq(Save(M.find x regenv, x), e))
+    (Ans(constr
+           (List.map (fun y -> find y Type.Int regenv) ys)
+           (List.map (fun z -> find z Type.Float regenv) zs)))
+    (fv cont),
+  M.empty
 
 let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } =
   let regenv = M.add x reg_cl M.empty in
@@ -233,8 +233,8 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } =
   let (e', regenv') = g (a, t) (Ans(Mov(a))) regenv e in
   { name = Id.L(x); args = arg_regs; fargs = farg_regs; body = e'; ret = t }
 
-let f (Prog(data, fundefs, e)) =
+let f (Prog(float_data, array_data, fundefs, e)) =
   Format.eprintf "register allocation: may take some time (up to a few minutes, depending on the size of functions)@.";
   let fundefs' = List.map h fundefs in
   let e', regenv' = g (Id.gentmp Type.Unit, Type.Unit) (Ans(Nop)) M.empty e in
-  Prog(data, fundefs', e')
+  Prog(float_data, array_data, fundefs', e')

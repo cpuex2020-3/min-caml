@@ -26,6 +26,7 @@ let rec g env = function
      | e1' ->
        let e2' = g env e2 in
        Let((x, t), e1', e2'))
+  | GlobalLet((x, t), e1, e2) -> raise (Failure "Currently not supporting beta reduction on global variables.")
   | LetRec({ name = xt; args = yts; body = e1 }, e2) ->
     LetRec({ name = xt; args = yts; body = g env e1 }, g env e2)
   | Var(x) -> Var(find x env)

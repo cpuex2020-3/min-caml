@@ -6,6 +6,7 @@ exception Unify of Type.t * Type.t
 exception Error of t * string * string
 
 let extenv = ref M.empty
+let globenv = ref M.empty
 
 (* for pretty printing (and type normalization) *)
 let rec deref_typ = function
@@ -38,6 +39,7 @@ let rec deref_term = function
   | FDiv(e1, e2) -> FDiv(deref_term e1, deref_term e2)
   | If(e1, e2, e3) -> If(deref_term e1, deref_term e2, deref_term e3)
   | Let(xt, e1, e2) -> Let(deref_id_typ xt, deref_term e1, deref_term e2)
+  | GlobalLet(xt, e1, e2) -> GlobalLet(deref_id_typ xt, deref_term e1, deref_term e2)
   | LetRec({ name = xt; args = yts; body = e1 }, e2) ->
     LetRec({ name = deref_id_typ xt;
              args = List.map deref_id_typ yts;
@@ -121,11 +123,17 @@ let rec g env e =
     | Let((x, t), e1, e2) ->
       unify t (g env e1);
       g (M.add x t env) e2
+    | GlobalLet((x, t), e1, e2) ->
+      unify t (g env e1);
+      globenv := M.add x t !globenv;
+      g env e2
     | Var(x) when M.mem x env -> M.find x env
     | Var(x) when M.mem x !extenv -> M.find x !extenv
+    | Var(x) when M.mem x !globenv -> M.find x !globenv
     | Var(x) ->
       Format.eprintf "free variable %s assumed as external@." x;
       let t = Type.gentyp () in
+      Printf.printf "adding %s\n" x;
       extenv := M.add x t !extenv;
       t
     | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
@@ -166,4 +174,5 @@ let f e =
   (try unify Type.Unit (g M.empty e)
    with Unify _ -> ());
   extenv := M.map deref_typ !extenv;
+  globenv := M.map deref_typ !globenv;
   deref_term e
