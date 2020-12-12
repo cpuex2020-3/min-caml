@@ -12,7 +12,7 @@ $(RESULT): debug-code top
 clean:: nobackup
 
 SOURCES = float.c type.ml id.ml m.ml s.ml \
-syntax.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
+syntax.ml parser.mly lexer.mll typing.mli typing.ml constExp.mli constExp.ml kNormal.mli kNormal.ml \
 alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 closure.mli closure.ml asm.mli asm.ml virtual.mli virtual.ml \
@@ -44,9 +44,7 @@ test/%.cmp: test/%.res test/%.ans
 	diff -w -B $^ > $@
 
 raytrace: $(RESULT)
-	cat ./raytracer/globals.ml > ./raytracer/minrt_full.ml
-	cat ./raytracer/minrt.ml >> ./raytracer/minrt_full.ml
-	./$(RESULT) raytracer/minrt_full
+	./$(RESULT) raytracer/minrt
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \

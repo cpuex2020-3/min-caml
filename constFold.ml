@@ -16,8 +16,8 @@ let findt x env = (match M.find x env with Tuple(ys) -> ys | _ -> raise Not_foun
 
 let rec g env = function
   | Var(x) when memi x env -> Int(findi x env)
-  (*| Var(x) when memf x env -> Float(findf x env)*) (* TODO *)
-  (*| Var(x) when memt x env -> Tuple(findt x env)*)
+  | Var(x) when memf x env -> Float(findf x env)
+  | Var(x) when memt x env -> Tuple(findt x env)
   | Neg(x) when memi x env -> Int(-(findi x env))
   | Add(x, y) when memi x env && memi y env -> Int(findi x env + findi y env)
   | Sub(x, y) when memi x env && memi y env -> Int(findi x env - findi y env)

@@ -36,7 +36,7 @@ and exp =
   | Save of Id.t * Id.t
   | Restore of Id.t
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
-type prog = Prog of (Id.l * float) list * (Id.t * KNormal.const_exp) list * fundef list * t
+type prog = Prog of (Id.l * float) list * (Id.t * ConstExp.t) list * fundef list * t
 
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)

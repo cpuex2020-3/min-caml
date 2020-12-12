@@ -1,4 +1,5 @@
 open Asm
+open ConstExp
 
 let pre_count_stack_set = ref S.empty
 let stackset = ref S.empty
@@ -289,15 +290,8 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 let data_top = ref 100 (* .data starts from memory address 100. *)
 
-let rec select_const_array_and_tuple = function (* TODO: use filter *)
-  | hd :: tl ->
-    (match hd with
-     | KNormal.ConstArray(_) | KNormal.ConstTuple(_) -> hd :: select_const_array_and_tuple tl
-     | _ -> select_const_array_and_tuple tl)
-  | [] -> []
-
 let rec gen_global oc x = function
-  | KNormal.ConstArray(len, init) ->
+  | ConstArray(len, init) ->
     (match init with
      | ConstInt(_) | ConstFloat(_) ->
        Printf.fprintf oc "%s:\n" x;
@@ -312,17 +306,17 @@ let rec gen_global oc x = function
        for cnt = 1 to len do
          Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int head_addr); data_top := !data_top + 4
        done)
-  | KNormal.ConstInt(i) ->
+  | ConstInt(i) ->
     Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int i);
     data_top := !data_top + 4
-  | KNormal.ConstBool(b) ->
+  | ConstBool(b) ->
     Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0));
     data_top := !data_top + 4
-  | KNormal.ConstFloat(f) ->
+  | ConstFloat(f) ->
     Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.bits_of_float f);
     data_top := !data_top + 4
-  | KNormal.ConstTuple(cs) ->
-    let arrays = select_const_array_and_tuple cs in
+  | ConstTuple(cs) ->
+    let arrays = List.filter (function ConstArray(_) | ConstTuple(_) -> true | _ -> false) cs in
     let head_addresses = ref [] in
     List.iteri
       (fun i arr ->
@@ -335,13 +329,13 @@ let rec gen_global oc x = function
     let counter = ref 0 in
     List.iter
       (function
-        | KNormal.ConstInt(_) | KNormal.ConstFloat(_) as c ->
+        | ConstInt(_) | ConstFloat(_) as c ->
           gen_global oc x c
-        | KNormal.ConstBool(b) -> Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0))
-        | KNormal.ConstArray(_) ->
+        | ConstBool(b) -> Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0))
+        | ConstArray(_) ->
           Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (List.nth !head_addresses !counter));
           counter := !counter + 1;
-        | KNormal.ConstTuple(_) ->
+        | ConstTuple(_) ->
           Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (List.nth !head_addresses !counter));
           counter := !counter + 1)
       cs

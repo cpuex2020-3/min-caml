@@ -129,7 +129,6 @@ let rec print t depth =
      print_newline();
      print t2 depth;
      print_newline())
-  (* TODO: print type as well *)
   | GlobalLet ((id, ty), t1, t2) ->
     (Printf.printf "GLOBAL_LET %s TYPE %s\n" id (Type.str ty);
      print t1 depth;

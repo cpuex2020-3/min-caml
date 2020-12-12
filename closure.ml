@@ -16,7 +16,7 @@ type t =
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
   | Let of (Id.t * Type.t) * t * t
-  | GlobalLet of (Id.t * Type.t) * KNormal.const_exp * t
+  | GlobalLet of (Id.t * Type.t) * ConstExp.t * t
   | Var of Id.t
   | MakeCls of (Id.t * Type.t) * closure * t
   | AppCls of Id.t * Id.t list
@@ -32,13 +32,7 @@ type fundef = { name : Id.l * Type.t;
                 body : t }
 type prog = Prog of fundef list * t
 
-let rec filter_globals = function
-  | hd :: tl ->
-    if M.mem hd !Typing.globenv then
-      filter_globals tl
-    else
-      hd :: filter_globals tl
-  | [] -> []
+let rec filter_globals xs = List.filter (fun x -> not (M.mem x !Typing.globenv)) xs
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
