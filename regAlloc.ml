@@ -1,4 +1,5 @@
 open Asm
+open Ir
 
 (* for register coalescing *)
 let rec target' src (dest, t) = function
@@ -124,7 +125,6 @@ and g'_and_restore dest cont regenv exp =
       g dest cont regenv (Let((x, t), Restore(x), Ans(exp))))
 and g' dest cont regenv = function
   | Nop | Seti _ | SetFi _ | SetL _ | Restore _ as exp -> (Ans(exp), regenv)
-  (*| Comment _ | Restore _ as exp -> (Ans(exp), regenv)*)
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv)), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv)), regenv)
   | Add(x, y') -> (Ans(Add(find x Type.Int regenv, find' y' regenv)), regenv)
@@ -181,15 +181,15 @@ and g'_if dest cont regenv exp constr e1 e2 =
          with Not_found -> regenv')
       M.empty
       (fv cont) in
-  (List.fold_left
-     (fun e x ->
-        if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then
-          e
-        else
-          seq(Save(M.find x regenv, x), e))
-     (Ans(constr e1' e2'))
-     (fv cont),
-   regenv')
+  List.fold_left
+    (fun e x ->
+       if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then
+         e
+       else
+         seq(Save(M.find x regenv, x), e))
+    (Ans(constr e1' e2'))
+    (fv cont),
+  regenv'
 and g'_call dest cont regenv exp constr ys zs =
   List.fold_left
     (fun e x ->

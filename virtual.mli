@@ -1,2 +1,2 @@
 val globenv : Type.t M.t ref
-val f : Closure.prog -> Asm.prog
+val f : Closure.prog -> Ir.prog

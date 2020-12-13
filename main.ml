@@ -25,9 +25,10 @@ let lexbuf outchan l =
   (*print_string "\n** Output of Closure.t after tuple flattening **\n";*)
   (*Closure.print flatten;*)
   Emit.f outchan
-    (RegAlloc.f
-       (Simm.f
-          (Virtual.f flatten)))
+    (Gen.f
+       (RegAlloc.f
+          (Simm.f
+             (Virtual.f flatten))))
 
 let string s = lexbuf stdout (Lexing.from_string s)
 let globals_path = ref "./raytracer/globals.ml"
