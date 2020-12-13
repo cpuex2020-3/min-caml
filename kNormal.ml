@@ -30,99 +30,6 @@ type t =
   | ExtFunApp of Id.t * Id.t list
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-let rec print_n_tabs n =
-  if n = 0 then ()
-  else (Printf.printf " "; print_n_tabs (n-1))
-
-let rec print t depth =
-  print_n_tabs depth;
-  match t with
-  | Unit -> Printf.printf "UNIT"
-  | Int i -> Printf.printf "INT %d" i
-  | Float f -> Printf.printf "FLOAT %f" f
-  | Neg id -> Printf.printf "NEG %s" id
-  | Add (lhs, rhs) -> Printf.printf "ADD %s %s\n" lhs rhs
-  | Sub (lhs, rhs) -> Printf.printf "SUB %s %s\n" lhs rhs
-  | Mul (lhs, rhs) -> Printf.printf "Mul %s %d\n" lhs rhs
-  | Div (lhs, rhs) -> Printf.printf "Div %s %d\n" lhs rhs
-  | FNeg id -> Printf.printf "FNEG %s" id
-  | FAdd (lhs, rhs) -> Printf.printf "FADD %s %s\n" lhs rhs
-  | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
-  | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
-  | FDiv (lhs, rhs) -> Printf.printf "FDIV %s %s\n" lhs rhs
-  | IfEq (lhs, rhs, thn, els) ->
-    (Printf.printf "IF %s = %s\n" lhs rhs;
-     print thn (depth + 1);
-     print_newline();
-     print els (depth + 1);
-     print_newline())
-  | IfLE (lhs, rhs, thn, els) ->
-    (Printf.printf "IF %s <= %s\n" lhs rhs;
-     print thn (depth + 1);
-     print_newline();
-     print els (depth + 1);
-     print_newline())
-  | Let ((id, ty), t1, t2) ->
-    (Printf.printf "LET %s TYPE: %s\n" id (Type.str ty);
-     print t1 (depth + 1);
-     print_newline();
-     print t2 (depth + 1);
-     print_newline())
-  | GlobalLet ((id, ty), t1, t2) ->
-    (Printf.printf "GLOBAL_LET %s TYPE: %s\n" id (Type.str ty);
-     print_newline();
-     print t2 (depth + 1);
-     print_newline())
-  | Var (v) -> Printf.printf "VAR %s" v
-  | LetRec (f, ty) ->
-    (let (id, t) = f.name in
-     let args = f.args in
-     let body = f.body in
-     Printf.printf "LETREC %s\n" id;
-     print_n_tabs (depth + 1);
-     Printf.printf "ARGS\n";
-     print_n_tabs (depth + 2);
-     List.iter (fun arg -> (let (id, ty) = arg in Printf.printf "ID %s, TYPE %s" id (Type.str ty))) args;
-     print_newline();
-     print_n_tabs (depth + 1);
-     Printf.printf "BODY\n";
-     print body (depth + 1);
-     print_newline();
-     print ty (depth + 1);
-     print_newline())
-  | App (id, li) ->
-    (Printf.printf "APP\n";
-     print_n_tabs (depth + 1);
-     Printf.printf "ID: %s\n" id;
-     print_n_tabs (depth + 1);
-     Printf.printf "ARGS: [\n";
-     List.iter (fun arg -> (print_n_tabs (depth + 2); print_string arg; print_newline();)) li;
-     print_n_tabs (depth + 1);
-     Printf.printf "]\n")
-  | Tuple (li) ->
-    (Printf.printf "TUPLE [\n";
-     List.iter (fun arg -> (print_n_tabs (depth + 1); print_string arg; print_newline();)) li;
-     print_n_tabs depth;
-     Printf.printf "]\n")
-  | LetTuple (li, id, t) ->
-    (Printf.printf "LETTUPLE (\n";
-     List.iter
-       (fun arg ->
-          (let (id, ty) = arg in
-           print_n_tabs (depth + 1);
-           Printf.printf "ID: %s, TYPE: %s\n" id (Type.str ty);
-           print_newline()))
-       li;
-     print_n_tabs depth;
-     Printf.printf ")\n")
-  | Get (t1, t2) -> Printf.printf "GET %s %s\n" t1 t2
-  | Put (t1, t2, t3) -> Printf.printf "PUT %s %s %s\n" t1 t2 t3
-  | ExtArray (t) -> Printf.printf "EXTARRAY %s\n" t
-  | ExtFunApp (id, li) ->
-    (Printf.printf "EXTFUNAPP %s [" id;
-     List.iter (fun id -> Printf.printf "%s " id) li;
-     Printf.printf "]\n")
-
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
@@ -327,3 +234,96 @@ let rec g env = function
               (fun z -> Put(x, y, z), Type.Unit)))
 
 let f e = fst (g M.empty e)
+
+let rec print_n_tabs n =
+  if n = 0 then ()
+  else (Printf.printf " "; print_n_tabs (n-1))
+
+let rec print t depth =
+  print_n_tabs depth;
+  match t with
+  | Unit -> Printf.printf "UNIT"
+  | Int i -> Printf.printf "INT %d" i
+  | Float f -> Printf.printf "FLOAT %f" f
+  | Neg id -> Printf.printf "NEG %s" id
+  | Add (lhs, rhs) -> Printf.printf "ADD %s %s\n" lhs rhs
+  | Sub (lhs, rhs) -> Printf.printf "SUB %s %s\n" lhs rhs
+  | Mul (lhs, rhs) -> Printf.printf "Mul %s %d\n" lhs rhs
+  | Div (lhs, rhs) -> Printf.printf "Div %s %d\n" lhs rhs
+  | FNeg id -> Printf.printf "FNEG %s" id
+  | FAdd (lhs, rhs) -> Printf.printf "FADD %s %s\n" lhs rhs
+  | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
+  | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
+  | FDiv (lhs, rhs) -> Printf.printf "FDIV %s %s\n" lhs rhs
+  | IfEq (lhs, rhs, thn, els) ->
+    (Printf.printf "IF %s = %s\n" lhs rhs;
+     print thn (depth + 1);
+     print_newline();
+     print els (depth + 1);
+     print_newline())
+  | IfLE (lhs, rhs, thn, els) ->
+    (Printf.printf "IF %s <= %s\n" lhs rhs;
+     print thn (depth + 1);
+     print_newline();
+     print els (depth + 1);
+     print_newline())
+  | Let ((id, ty), t1, t2) ->
+    (Printf.printf "LET %s TYPE: %s\n" id (Type.str ty);
+     print t1 (depth + 1);
+     print_newline();
+     print t2 (depth + 1);
+     print_newline())
+  | GlobalLet ((id, ty), t1, t2) ->
+    (Printf.printf "GLOBAL_LET %s TYPE: %s\n" id (Type.str ty);
+     print_newline();
+     print t2 (depth + 1);
+     print_newline())
+  | Var (v) -> Printf.printf "VAR %s" v
+  | LetRec (f, ty) ->
+    (let (id, t) = f.name in
+     let args = f.args in
+     let body = f.body in
+     Printf.printf "LETREC %s\n" id;
+     print_n_tabs (depth + 1);
+     Printf.printf "ARGS\n";
+     print_n_tabs (depth + 2);
+     List.iter (fun arg -> (let (id, ty) = arg in Printf.printf "ID %s, TYPE %s" id (Type.str ty))) args;
+     print_newline();
+     print_n_tabs (depth + 1);
+     Printf.printf "BODY\n";
+     print body (depth + 1);
+     print_newline();
+     print ty (depth + 1);
+     print_newline())
+  | App (id, li) ->
+    (Printf.printf "APP\n";
+     print_n_tabs (depth + 1);
+     Printf.printf "ID: %s\n" id;
+     print_n_tabs (depth + 1);
+     Printf.printf "ARGS: [\n";
+     List.iter (fun arg -> (print_n_tabs (depth + 2); print_string arg; print_newline();)) li;
+     print_n_tabs (depth + 1);
+     Printf.printf "]\n")
+  | Tuple (li) ->
+    (Printf.printf "TUPLE [\n";
+     List.iter (fun arg -> (print_n_tabs (depth + 1); print_string arg; print_newline();)) li;
+     print_n_tabs depth;
+     Printf.printf "]\n")
+  | LetTuple (li, id, t) ->
+    (Printf.printf "LETTUPLE (\n";
+     List.iter
+       (fun arg ->
+          (let (id, ty) = arg in
+           print_n_tabs (depth + 1);
+           Printf.printf "ID: %s, TYPE: %s\n" id (Type.str ty);
+           print_newline()))
+       li;
+     print_n_tabs depth;
+     Printf.printf ")\n")
+  | Get (t1, t2) -> Printf.printf "GET %s %s\n" t1 t2
+  | Put (t1, t2, t3) -> Printf.printf "PUT %s %s %s\n" t1 t2 t3
+  | ExtArray (t) -> Printf.printf "EXTARRAY %s\n" t
+  | ExtFunApp (id, li) ->
+    (Printf.printf "EXTFUNAPP %s [" id;
+     List.iter (fun id -> Printf.printf "%s " id) li;
+     Printf.printf "]\n")

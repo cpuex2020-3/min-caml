@@ -1,6 +1,7 @@
 (* translation into assembly with infinite number of virtual registers *)
 
 open Asm
+open Ir
 
 let float_data = ref [] (* Table for floating points. *)
 let array_data = ref [] (* Table for global variables. *)

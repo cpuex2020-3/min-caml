@@ -1,45 +1,37 @@
-type id_or_imm = V of Id.t | C of int
-type t =
-  | Ans of exp
-  | Let of (Id.t * Type.t) * exp * t
-and exp =
-  | Nop
-  | Seti of int
-  | SetFi of Id.l
-  | SetL of Id.l
-  | Mov of Id.t
-  | Neg of Id.t
-  | Add of Id.t * id_or_imm
-  | Sub of Id.t * Id.t
-  | Mul of Id.t * int
-  | Div of Id.t * int
-  | Ld of Id.t * id_or_imm
-  | St of Id.t * Id.t * id_or_imm
-  | FMov of Id.t
-  | FNeg of Id.t
-  | FAdd of Id.t * Id.t
-  | FSub of Id.t * Id.t
-  | FMul of Id.t * Id.t
-  | FDiv of Id.t * Id.t
-  | LdF of Id.t * id_or_imm
-  | StF of Id.t * Id.t * id_or_imm
-  (*| Comment of string*)
-  (* virtual instructions *)
-  | IfEq of Id.t * id_or_imm * t * t
-  | IfLE of Id.t * id_or_imm * t * t
-  | IfGE of Id.t * id_or_imm * t * t
-  | IfFEq of Id.t * Id.t * t * t
-  | IfFLE of Id.t * Id.t * t * t
-  (* closure address, integer arguments, and float arguments *)
-  | CallCls of Id.t * Id.t list * Id.t list
-  | CallDir of Id.l * Id.t list * Id.t list
-  | Save of Id.t * Id.t
-  | Restore of Id.t
-type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
-type prog = Prog of (Id.l * float) list * (Id.t * ConstExp.t) list * fundef list * t
+type hex_string = string
 
-val fletd : Id.t * exp * t -> t (* shorthand of Let for float *)
-val seq : exp * t -> t (* shorthand of Let for unit *)
+type t =
+  | Li of Id.t * int
+  | La of Id.t * Id.l
+  | Mv of Id.t * Id.t
+  | Addi of Id.t * Id.t * int
+  | Add of Id.t * Id.t * Id.t
+  | Sub of Id.t * Id.t * Id.t
+  | Slli of Id.t * Id.t * int
+  | Srli of Id.t * Id.t * int
+  | Lw of Id.t * int * Id.t
+  | Sw of Id.t * int * Id.t
+  | Fadd of Id.t * Id.t * Id.t
+  | Fsub of Id.t * Id.t * Id.t
+  | Fmul of Id.t * Id.t * Id.t
+  | Fdiv of Id.t * Id.t * Id.t
+  | Flw of Id.t * int * Id.t
+  | Fsw of Id.t * int * Id.t
+  | Fsgnj of Id.t * Id.t * Id.t
+  | Fsgnjn of Id.t * Id.t * Id.t
+  | Ret
+  | Jalr of Id.t * Id.t * int
+  | J of Id.l
+  | Jal of Id.l
+  | Label of Id.l
+  | Beq of Id.t * Id.t * Id.l
+  | Bne of Id.t * Id.t * Id.l
+  | Blt of Id.t * Id.t * Id.l
+  | Feq of Id.t * Id.t * Id.t
+  | Fle of Id.t * Id.t * Id.t
+
+type fundef = { label : Id.l; args : Id.t list; fargs : Id.t list; body : t list; ret : Type.t }
+type prog = { floats : (Id.l * float) list; globals : (Id.t * ConstExp.t) list; fundefs : fundef list; programs : t list }
 
 val regs : Id.t array
 val fregs : Id.t array
@@ -52,7 +44,5 @@ val reg_sw : Id.t
 val reg_fsw : Id.t
 val reg_sp : Id.t
 val reg_hp : Id.t
+val reg_zero : Id.t
 val is_reg : Id.t -> bool
-
-val fv : t -> Id.t list
-val concat : t -> Id.t * Type.t -> t -> t

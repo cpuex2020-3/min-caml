@@ -153,6 +153,7 @@ let rec print_t t depth =
     Printf.printf "IF %s <= %s\n" lhs rhs;
     print_t thn (depth + 1);
     print_newline();
+    print_n_tabs depth;
     Printf.printf "ELSE\n";
     print_t els (depth + 1);
     print_newline()
