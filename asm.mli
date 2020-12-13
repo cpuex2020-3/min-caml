@@ -31,7 +31,7 @@ type t =
   | Fle of Id.t * Id.t * Id.t
 
 type fundef = { label : Id.l; args : Id.t list; fargs : Id.t list; body : t list; ret : Type.t }
-type prog = { floats : (Id.l * float) list; globals : (Id.t * ConstExp.t) list; fundefs : fundef list; programs : t list }
+type prog = { floats : (Id.l * float) list; globals : (Id.t * ConstExp.t) list; fundefs : fundef list; prog : t list }
 
 val regs : Id.t array
 val fregs : Id.t array

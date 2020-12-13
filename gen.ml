@@ -1,5 +1,4 @@
 open Asm
-open ConstExp
 open Ir
 
 let pre_count_stack_set = ref S.empty
@@ -114,33 +113,44 @@ and g' = function
      | _ -> assert false)
     @ [Ret]
   | Tail, IfEq(x, y', e1, e2) ->
+    let b_else = Id.genid "beq_else" in
     (match y' with
-     | V(y) -> g'_tail_if x y e1 e2 "bne"
-     | C(i) -> Li(reg_buf, i) :: g'_tail_if x reg_buf e1 e2 "bne")
+     | V(y) ->
+       g'_tail_if (Bne(x, y, Id.L(b_else))) e1 e2 b_else
+     | C(i) ->
+       Li(reg_buf, i) :: g'_tail_if (Bne(x, reg_buf, Id.L(b_else))) e1 e2 b_else)
   | Tail, IfLE(x, y', e1, e2) ->
+    let b_else = Id.genid "ble_else" in
     (match y' with
-     | V(y) -> g'_tail_if y x e1 e2 "blt"
-     | C(i) -> Li(reg_buf, i) :: g'_tail_if reg_buf x e1 e2 "blt")
+     | V(y) -> g'_tail_if (Blt(y, x, Id.L(b_else))) e1 e2 b_else
+     | C(i) -> Li(reg_buf, i) :: g'_tail_if (Blt(reg_buf, x, Id.L(b_else))) e1 e2 b_else)
   | Tail, IfGE(x, y', e1, e2) ->
+    let b_else = Id.genid "bge_else" in
     (match y' with
-     | V(y) -> g'_tail_if x y e1 e2 "blt"
-     | C(i) -> Li(reg_buf, i) :: g'_tail_if x reg_buf e1 e2 "blt")
-  | Tail, IfFEq(x, y, e1, e2) -> g'_tail_float_if x y e1 e2 "feq.s"
-  | Tail, IfFLE(x, y, e1, e2) -> g'_tail_float_if x y e1 e2 "fle.s"
+     | V(y) -> g'_tail_if (Blt(x, y, Id.L(b_else))) e1 e2 b_else
+     | C(i) -> Li(reg_buf, i) :: g'_tail_if (Blt(x, reg_buf, Id.L(b_else))) e1 e2 b_else)
+  | Tail, IfFEq(x, y, e1, e2) -> g'_tail_float_if (Feq(reg_buf, x, y)) e1 e2
+  | Tail, IfFLE(x, y, e1, e2) -> g'_tail_float_if (Fle(reg_buf, x, y)) e1 e2
   | NonTail(z), IfEq(x, y', e1, e2) ->
+    let b_else = Id.genid "ble_else" in
+    let b_cont = Id.genid "ble_cont" in
     (match y' with
-     | V(y) -> g'_non_tail_if (NonTail(z)) x y e1 e2 "bne"
-     | C(i) -> Li(reg_buf, i) :: g'_non_tail_if (NonTail(z)) x reg_buf e1 e2 "bne")
+     | V(y) -> g'_non_tail_if (NonTail(z)) (Bne(x, y, Id.L(b_else))) e1 e2 b_else b_cont
+     | C(i) -> Li(reg_buf, i) :: g'_non_tail_if (NonTail(z)) (Bne(x, reg_buf, Id.L(b_else))) e1 e2 b_else b_cont)
   | NonTail(z), IfLE(x, y', e1, e2) ->
+    let b_else = Id.genid "ble_else" in
+    let b_cont = Id.genid "ble_cont" in
     (match y' with
-     | V(y) -> g'_non_tail_if (NonTail(z)) y x e1 e2 "blt"
-     | C(i) -> Li(reg_buf, i) :: g'_non_tail_if (NonTail(z)) reg_buf x e1 e2 "blt")
+     | V(y) -> g'_non_tail_if (NonTail(z)) (Blt(y, x, Id.L(b_else))) e1 e2 b_else b_cont
+     | C(i) -> Li(reg_buf, i) :: g'_non_tail_if (NonTail(z)) (Blt(reg_buf, x, Id.L(b_else))) e1 e2 b_else b_cont)
   | NonTail(z), IfGE(x, y', e1, e2) ->
+    let b_else = Id.genid "bge_else" in
+    let b_cont = Id.genid "bge_cont" in
     (match y' with
-     | V(y) -> g'_non_tail_if (NonTail(z)) x y e1 e2 "blt"
-     | C(i) -> Li(reg_buf, i) :: g'_non_tail_if (NonTail(z)) x reg_buf e1 e2 "blt")
-  | NonTail(z), IfFEq(x, y, e1, e2) -> g'_non_tail_float_if (NonTail(z)) x y e1 e2 "feq.s"
-  | NonTail(z), IfFLE(x, y, e1, e2) -> g'_non_tail_float_if (NonTail(z)) x y e1 e2 "fle.s"
+     | V(y) -> g'_non_tail_if (NonTail(z)) (Blt(x, y, Id.L(b_else))) e1 e2 b_else b_cont
+     | C(i) -> Li(reg_buf, i) :: g'_non_tail_if (NonTail(z)) (Blt(x, reg_buf, Id.L(b_else))) e1 e2 b_else b_cont)
+  | NonTail(z), IfFEq(x, y, e1, e2) -> g'_non_tail_float_if (NonTail(z)) (Feq(reg_buf, x, y)) e1 e2
+  | NonTail(z), IfFLE(x, y, e1, e2) -> g'_non_tail_float_if (NonTail(z)) (Fle(reg_buf, x, y)) e1 e2
   | Tail, CallCls(x, ys, zs) ->
     (g'_args [(x, reg_cl)] ys zs) @ [Lw(reg_buf, 0, reg_cl); Jalr(reg_zero, reg_buf, 0)]
   | Tail, CallDir(Id.L(x), ys, zs) -> (g'_args [] ys zs) @ [J(Id.L(x))]
@@ -171,45 +181,25 @@ and g' = function
       else
         [] in
     args @ jal @ epilog
-and g'_tail_if x y e1 e2 bn =
-  let b_else = Id.genid (bn ^ "_stands") in
+and g'_tail_if bn e1 e2 b_else =
   let stackset_back = !stackset in
-  let stands = (if bn = "bne" then
-                  Bne(x, y, Id.L(b_else))
-                else if bn = "blt" then
-                  Blt(x, y, Id.L(b_else))
-                else
-                  raise (Failure "unhandled in g'_tail_if")) ::
-               g (Tail, e1) in
+  let stands = bn :: g (Tail, e1) in
   stackset := stackset_back;
   let els = Label(Id.L(b_else)) :: g (Tail, e2) in
   stands @ els
-and g'_tail_float_if x y e1 e2 b =
-  let b_else = Id.genid (b ^ "_else") in
+and g'_tail_float_if b e1 e2 =
+  let b_else = match b with
+    | Feq(_) -> Id.genid "feq_else"
+    | Fle(_) -> Id.genid "fle_else"
+    | _ -> raise (Failure "unhandled in g'_tail_float_if")in
   let stackset_back = !stackset in
-  let stands = (if b = "feq.s" then
-                  Feq(reg_buf, x, y)
-                else if b = "fle.s" then
-                  Fle(reg_buf, x, y)
-                else
-                  raise (Failure "unhandled in g'_tail_float_if")) ::
-               Beq(reg_buf, reg_zero, Id.L(b_else)) ::
-               g (Tail, e1) in
+  let stands = b :: Beq(reg_buf, reg_zero, Id.L(b_else)) :: g (Tail, e1) in
   stackset := stackset_back;
   let els = Label(Id.L(b_else)) :: g (Tail, e2) in
   stands @ els
-and g'_non_tail_if dest x y e1 e2 bn =
-  let b_else = Id.genid (bn ^ "_stands") in
-  let b_cont = Id.genid (bn ^ "_cont") in
+and g'_non_tail_if dest bn e1 e2 b_else b_cont =
   let stackset_back = !stackset in
-  let stands = (if bn = "bne" then
-                  Bne(x, y, Id.L(b_else))
-                else if bn = "blt" then
-                  Blt(x, y, Id.L(b_else))
-                else
-                  raise (Failure "unhandled in g'_non_tail_if")) ::
-               g (dest, e1) @
-               [J(Id.L(b_cont))] in
+  let stands = bn :: g (dest, e1) @ [J(Id.L(b_cont))] in
   let stackset1 = !stackset in
   stackset := stackset_back;
   let els = Label(Id.L(b_else)) :: g (dest, e2) in
@@ -217,18 +207,13 @@ and g'_non_tail_if dest x y e1 e2 bn =
   let stackset2 = !stackset in
   stackset := S.inter stackset1 stackset2;
   stands @ els @ cont
-and g'_non_tail_float_if dest x y e1 e2 b =
-  let b_else = Id.genid (b ^ "_else") in
-  let b_cont = Id.genid (b ^ "_cont") in
+and g'_non_tail_float_if dest b e1 e2 =
+  let (b_else, b_cont) = match b with
+    | Feq(_) -> (Id.genid "feq_else", Id.genid "feq_else")
+    | Fle(_) -> (Id.genid "fle_else", Id.genid "fle_else")
+    | _ -> raise (Failure "unhandled in g'_non_tail_float_if")in
   let stackset_back = !stackset in
-  let stands = (if b = "feq.s" then
-                  Feq(reg_buf, x, y)
-                else if b = "fle.s" then
-                  Fle(reg_buf, x, y)
-                else
-                  raise (Failure "unhandled in g'_non_tail_float_if")) ::
-               Beq(reg_buf, reg_zero, Id.L(b_else)) ::
-               g (dest, e1) @ [J(Id.L(b_cont))] in
+  let stands = b :: Beq(reg_buf, reg_zero, Id.L(b_else)) :: g (dest, e1) @ [J(Id.L(b_cont))] in
   let stackset1 = !stackset in
   stackset := stackset_back;
   let els = Label(Id.L(b_else)) :: g (dest, e2) in
@@ -266,5 +251,5 @@ let f (Prog(float_data, array_data, fundefs, e)) =
   let fundefs = List.map (fun fundef -> h fundef) fundefs in
   stackset := S.empty;
   stackmap := [];
-  let programs = g (NonTail(regs.(0)), e) in
-  { floats = float_data; globals = array_data; fundefs = fundefs; programs = programs }
+  let prog = g (NonTail(regs.(0)), e) in
+  { floats = float_data; globals = array_data; fundefs = fundefs; prog = prog }
