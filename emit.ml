@@ -87,7 +87,7 @@ let h oc { label = Id.L(x); args = _; fargs = _; body = body; ret = _ } =
   Printf.fprintf oc "%s:\n" x;
   List.iter (fun e -> gen_elem oc e) body
 
-let f oc { floats = float_data; globals = array_data; fundefs = fundefs; programs = programs } =
+let f oc { floats = float_data; globals = array_data; fundefs = fundefs; prog = prog } =
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc "\t.data\n";
   List.iter (fun (x, const_exp) -> gen_global oc x const_exp) array_data;
@@ -103,6 +103,6 @@ let f oc { floats = float_data; globals = array_data; fundefs = fundefs; program
   Printf.fprintf oc "\taddi\tsp, sp, -52\n";
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  List.iter (fun elem -> gen_elem oc elem) programs;
+  List.iter (fun elem -> gen_elem oc elem) prog;
   Printf.fprintf oc "\taddi\tsp, sp, 52\n";
   Printf.fprintf oc "\tret\n";
