@@ -1,6 +1,7 @@
 (* translation into assembly with infinite number of virtual registers *)
 
 open Asm
+open ConstExp
 open Ir
 
 let float_data = ref [] (* Table for floating points. *)
@@ -31,6 +32,8 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t -> (offset + 4, addi x t offset acc))
 
 let globenv = ref M.empty
+let data_top = ref 100
+let label_to_address = ref M.empty
 
 let find_var x env =
   if M.mem x env then
@@ -39,6 +42,29 @@ let find_var x env =
     M.find x !globenv
   else
     raise (Failure (Printf.sprintf "%s is not found." x))
+
+let rec cal_position = function
+  | ConstArray(len, init) ->
+    (match init with
+     | ConstInt(_) | ConstFloat(_) ->
+       let ret = !data_top in
+       data_top := 4 * len + !data_top;
+       ret
+     | ConstBool(_) -> raise (Failure "Bool array??")
+     | ConstTuple(_) | ConstArray(_) ->
+       let _ = cal_position init in
+       let ret = !data_top in
+       data_top := 4 * len + !data_top;
+       ret)
+  | ConstInt(i) -> data_top := !data_top + 4; -1
+  | ConstBool(b) -> data_top := !data_top + 4; -1
+  | ConstFloat(f) -> data_top := !data_top + 4; -1
+  | ConstTuple(cs) ->
+    let arrays = List.filter (function ConstArray(_) | ConstTuple(_) -> true | _ -> false) cs in
+    List.iter (fun arr -> let _ = cal_position arr in ()) arrays;
+    let ret = !data_top in
+    data_top := !data_top + 4 * (List.length cs);
+    ret
 
 let rec g env = function
   | Closure.Unit -> Ans(Nop)
@@ -78,6 +104,7 @@ let rec g env = function
     let e2' = g (M.add x t1 env) e2 in
     concat e1' (x, t1) e2'
   | Closure.GlobalLet((x, t1), const, e) ->
+    label_to_address := M.add x (cal_position const) !label_to_address;
     array_data := (x, const) :: !array_data;
     globenv := M.add x t1 !globenv;
     g env e
@@ -148,10 +175,12 @@ let rec g env = function
       match M.find x !globenv with
       | Type.Array(Type.Unit) -> Ans(Nop)
       | Type.Array(Type.Float) ->
+        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
         Let((addr, Type.Int), SetL(Id.L(x)),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(LdF(addr, V(offset)))))
       | Type.Array(_) ->
+        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
         Let((addr, Type.Int), SetL(Id.L(x)),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(Ld(addr, V(offset)))))
@@ -177,12 +206,14 @@ let rec g env = function
       | Type.Array(Type.Float) ->
         let addr = Id.genid "l" in
         let offset = Id.genid "o" in
+        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
         Let((addr, Type.Int), SetL(Id.L(x)),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(StF(z, addr, V(offset)))))
       | Type.Array(_) ->
         let addr = Id.genid "l" in
         let offset = Id.genid "o" in
+        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
         Let((addr, Type.Int), SetL(Id.L(x)),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(St(z, addr, V(offset)))))
@@ -207,4 +238,4 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
 let f (Closure.Prog(fundefs, e)) =
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
-  Prog(!float_data, !array_data, fundefs, e)
+  Prog(!float_data, List.rev !array_data, fundefs, e)

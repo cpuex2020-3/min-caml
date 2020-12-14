@@ -1,7 +1,7 @@
 open Asm
 open ConstExp
 
-let gen_elem oc = function
+let emit oc = function
   | Li(x, i) -> Printf.fprintf oc "\tli\t%s, %d\n" x i
   | La(x, Id.L(l)) -> Printf.fprintf oc "\tla\t%s, %s\n" x l
   | Mv(x, y) -> Printf.fprintf oc "\tmv\t%s, %s\n" x y
@@ -30,72 +30,16 @@ let gen_elem oc = function
   | Blt(x, y, Id.L(l)) -> Printf.fprintf oc "\tblt\t%s, %s, %s\n" x y l
   | Feq(x, y, z) -> Printf.fprintf oc "\tfeq.s\t%s, %s, %s\n" x y z
   | Fle(x, y, z) -> Printf.fprintf oc "\tfle.s\t%s, %s, %s\n" x y z
-
-let data_top = ref 100 (* .data starts from memory address 100. *)
-
-let rec gen_global oc x = function
-  | ConstArray(len, init) ->
-    (match init with
-     | ConstInt(_) | ConstFloat(_) ->
-       Printf.fprintf oc "%s:\n" x;
-       for cnt = 1 to len do
-         gen_global oc x init
-       done
-     | ConstBool(_) -> raise (Failure "Bool array??")
-     | ConstTuple(_) | ConstArray(_) ->
-       let head_addr = !data_top in
-       gen_global oc (Printf.sprintf "%s_init" x) init;
-       Printf.fprintf oc "%s:\n" x;
-       for cnt = 1 to len do
-         Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int head_addr); data_top := !data_top + 4
-       done)
-  | ConstInt(i) ->
-    Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int i);
-    data_top := !data_top + 4
-  | ConstBool(b) ->
-    Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0));
-    data_top := !data_top + 4
-  | ConstFloat(f) ->
-    Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.bits_of_float f);
-    data_top := !data_top + 4
-  | ConstTuple(cs) ->
-    let arrays = List.filter (function ConstArray(_) | ConstTuple(_) -> true | _ -> false) cs in
-    let head_addresses = ref [] in
-    List.iteri
-      (fun i arr ->
-         (let head = !data_top in
-          head_addresses := head :: !head_addresses;
-          gen_global oc (Printf.sprintf "%s.arr_or_tpl.%d" x i) arr))
-      arrays;
-    head_addresses := List.rev !head_addresses;
-    Printf.fprintf oc "%s:\n" x;
-    let counter = ref 0 in
-    List.iter
-      (function
-        | ConstInt(_) | ConstFloat(_) as c ->
-          gen_global oc x c
-        | ConstBool(b) -> Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (if b then 1 else 0))
-        | ConstArray(_) ->
-          Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (List.nth !head_addresses !counter));
-          counter := !counter + 1;
-        | ConstTuple(_) ->
-          Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.of_int (List.nth !head_addresses !counter));
-          counter := !counter + 1)
-      cs
+  | Word(hex) -> Printf.fprintf oc "\t.word\t%s\n" hex
 
 let h oc { label = Id.L(x); args = _; fargs = _; body = body; ret = _ } =
   Printf.fprintf oc "%s:\n" x;
-  List.iter (fun e -> gen_elem oc e) body
+  List.iter (fun e -> emit oc e) body
 
-let f oc { floats = float_data; globals = array_data; fundefs = fundefs; prog = prog } =
+let f oc { data = data; fundefs = fundefs; prog = prog } =
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc "\t.data\n";
-  List.iter (fun (x, const_exp) -> gen_global oc x const_exp) array_data;
-  List.iter
-    (fun (Id.L(x), d) ->
-       Printf.fprintf oc "%s:\t# %f\n" x d;
-       Printf.fprintf oc "\t.word\t0x%08lx\n" (Int32.bits_of_float d))
-    float_data;
+  List.iter (fun word -> emit oc word) data;
   Printf.fprintf oc "\t.text\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "\t.globl\tmin_caml_start\n";
@@ -103,6 +47,6 @@ let f oc { floats = float_data; globals = array_data; fundefs = fundefs; prog = 
   Printf.fprintf oc "\taddi\tsp, sp, -52\n";
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);
-  List.iter (fun elem -> gen_elem oc elem) prog;
+  List.iter (fun elem -> emit oc elem) prog;
   Printf.fprintf oc "\taddi\tsp, sp, 52\n";
   Printf.fprintf oc "\tret\n";
