@@ -29,9 +29,10 @@ type t =
   | Blt of Id.t * Id.t * Id.l
   | Feq of Id.t * Id.t * Id.t
   | Fle of Id.t * Id.t * Id.t
+  | Word of hex_string
 
 type fundef = { label : Id.l; args : Id.t list; fargs : Id.t list; body : t list; ret : Type.t }
-type prog = { floats : (Id.l * float) list; globals : (Id.t * ConstExp.t) list; fundefs : fundef list; prog : t list }
+type prog = { data : t list; fundefs : fundef list; prog : t list }
 
 val regs : Id.t array
 val fregs : Id.t array

@@ -12,13 +12,13 @@ let rec iter_frontend n e =
     if e = e' then e else
       iter_frontend (n - 1) e'
 
-let rec iter_backend n e =
-  Format.eprintf "iteration %d@." n;
-  if n = 0 then e
-  else
-    let e' = Peephole.f e in
-    if e = e' then e else
-      iter_backend (n - 1) e'
+let rec iter_backend n e = e
+(*Format.eprintf "iteration %d@." n;*)
+(*if n = 0 then e*)
+(*else*)
+(*let e' = Peephole.f e in*)
+(*if e = e' then e else*)
+(*iter_backend (n - 1) e'*)
 
 let lexbuf outchan l =
   Id.counter := 0;

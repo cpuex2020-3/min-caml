@@ -29,9 +29,10 @@ type t =
   | Blt of Id.t * Id.t * Id.l
   | Feq of Id.t * Id.t * Id.t
   | Fle of Id.t * Id.t * Id.t
+  | Word of hex_string
 
 type fundef = { label : Id.l; args : Id.t list; fargs : Id.t list; body : t list; ret : Type.t }
-type prog = { floats : (Id.l * float) list; globals : (Id.t * ConstExp.t) list; fundefs : fundef list; prog : t list }
+type prog = { data : t list; fundefs : fundef list; prog : t list }
 
 let regs = [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"; "t3"; "t4"; "t5"; "t6" |]
 let fregs = [| "fa0"; "fa1"; "fa2"; "fa3"; "fa4"; "fa5"; "fa6"; "fa7"; "fs0"; "fs1"; "fs2"; "fs3"; "fs4"; "fs5"; "fs6"; "fs7"; "fs8"; "fs9"; "fs10"; "fs11"; "ft0"; "ft1"; "ft2"; "ft3"; "ft4"; "ft5"; "ft6"; "ft7"; "ft8"; "ft9"; "ft10"; "ft11" |]
