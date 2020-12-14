@@ -175,13 +175,11 @@ let rec g env = function
       match M.find x !globenv with
       | Type.Array(Type.Unit) -> Ans(Nop)
       | Type.Array(Type.Float) ->
-        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
-        Let((addr, Type.Int), SetL(Id.L(x)),
+        Let((addr, Type.Int), Seti(M.find x !label_to_address),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(LdF(addr, V(offset)))))
       | Type.Array(_) ->
-        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
-        Let((addr, Type.Int), SetL(Id.L(x)),
+        Let((addr, Type.Int), Seti(M.find x !label_to_address),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(Ld(addr, V(offset)))))
       | _ -> raise (Failure "invalid type for global array.")
@@ -206,15 +204,13 @@ let rec g env = function
       | Type.Array(Type.Float) ->
         let addr = Id.genid "l" in
         let offset = Id.genid "o" in
-        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
-        Let((addr, Type.Int), SetL(Id.L(x)),
+        Let((addr, Type.Int), Seti(M.find x !label_to_address),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(StF(z, addr, V(offset)))))
       | Type.Array(_) ->
         let addr = Id.genid "l" in
         let offset = Id.genid "o" in
-        (*Let((addr, Type.Int), Seti(M.find x !label_to_address),*)
-        Let((addr, Type.Int), SetL(Id.L(x)),
+        Let((addr, Type.Int), Seti(M.find x !label_to_address),
             Let((offset, Type.Int), Mul(y, 4),
                 Ans(St(z, addr, V(offset)))))
       | _ -> assert false

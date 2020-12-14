@@ -46,6 +46,15 @@ let rec shuffle sw xys =
 
 type dest = Tail | NonTail of Id.t
 
+let data_top = ref 100 (* .data starts from memory address 100. *)
+let float_ids = ref []
+
+let rec get_float_index l =
+  let rec idx cur = function
+    | (Id.L(hd), _) :: tl -> if hd = l then cur else idx (cur + 1) tl
+    | [] -> raise (Failure "float label not found.") in
+  idx 0 !float_ids
+
 let rec g = function
   | dest, Ans(exp) -> g' (dest, exp)
   | dest, Let((x, t), exp, e) ->
@@ -55,10 +64,15 @@ let rec g = function
 and g' = function
   | NonTail(_), Nop -> []
   | NonTail(x), Seti(i) -> [Li(x, i)]
-  | NonTail(x), SetFi(l) -> [La(reg_buf, l); Flw(x, 0, reg_buf)]
+  | NonTail(x), SetFi(Id.L(l)) ->
+    let offset = !data_top + 4 * (get_float_index l) in
+    if offset > 2047 then
+      [Li(reg_buf, offset); Flw(x, 0, reg_buf)]
+    else
+      [Flw(x, offset, reg_zero)]
   | NonTail(x), SetL(l) -> [La(x, l)]
   | NonTail(x), Mov(y) -> if x <> y then [Mv(x, y)] else []
-  | NonTail(x), Neg(y) -> if x <> y then [Mv(x, y); Sub(x, reg_zero, x)] else [Sub(x, reg_zero, x)]
+  | NonTail(x), Neg(y) -> [Sub(x, reg_zero, y)]
   | NonTail(x), Add(y, V(z)) -> [Add(x, y, z)]
   | NonTail(x), Add(y, C(i)) ->
     if i > 2047 then
@@ -243,8 +257,6 @@ and g'_args x_reg_cl ys zs =
       (shuffle reg_fsw zfrs) in
   int_args @ float_args
 
-let data_top = ref 100 (* .data starts from memory address 100. *)
-
 let int_to_hex i = Printf.sprintf "0x%08lx" (Int32.of_int i)
 let float_to_hex f = Printf.sprintf "0x%08lx" (Int32.bits_of_float f)
 
@@ -307,10 +319,11 @@ let h { name = Id.L(x); args = args; fargs = fargs; body = e; ret = ret } =
   { label = Id.L(x); args = args; fargs = fargs; body = g (Tail, e); ret = ret }
 
 let f (Prog(float_data, array_data, fundefs, e)) =
+  let array = List.concat_map (fun (id, const) -> gen_global id const) array_data in
+  let float = List.concat_map (fun (Id.L(id), f) -> gen_float id f) float_data in
+  float_ids := float_data;
   let fundefs = List.map (fun fundef -> h fundef) fundefs in
   stackset := S.empty;
   stackmap := [];
   let prog = g (NonTail(regs.(0)), e) in
-  let array = List.concat_map (fun (id, const) -> gen_global id const) array_data in
-  let float = List.concat_map (fun (Id.L(id), f) -> gen_float id f) float_data in
   { data = array @ float; fundefs = fundefs; prog = prog }
