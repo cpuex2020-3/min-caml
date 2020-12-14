@@ -1,6 +1,10 @@
 open Asm
 open Ir
 
+let rec flatten_let xt cont = function
+  | Ans(exp) -> Let(xt, exp, cont)
+  | Let(xt', e1', e2') -> Let(xt', e1', flatten_let xt cont e2')
+
 let rec g env const_env = function
   | Ans(exp) -> Ans(g' env const_env exp)
   | Let((x, t), Seti(i), e) ->
@@ -15,30 +19,67 @@ let rec g env const_env = function
     else
       ((* Format.eprintf "erased redundant Set to %s@." x; *)
         e')
+  | Let((x, t), Mov(y), e) when M.mem y env ->
+    let yi = M.find y env in
+    let e' = g (M.add x yi env) const_env e in
+    if List.mem x (fv e') then
+      Let((x, t), Seti(yi), e')
+    else
+      e'
   | Let(xt, Mul(y, i), e) when M.mem y env -> (* for array access *)
     (* Format.eprintf "erased redundant Slw on %s@." x; *)
-    if i = 2 then
-      g env const_env (Let(xt, Seti((M.find y env) lsl 1), e))
-    else if i = 4 then
-      g env const_env (Let(xt, Seti((M.find y env) lsl 2), e))
-    else
-      raise (Failure "unhandled mul.")
+    (match i with
+     | 2 -> g env const_env (Let(xt, Seti((M.find y env) lsl 1), e))
+     | 4 -> g env const_env (Let(xt, Seti((M.find y env) lsl 2), e))
+     | _ -> raise (Failure "unhandled mul."))
   | Let(xt, Div(y, i), e) when M.mem y env -> (* for array access *)
     (* Format.eprintf "erased redundant Slw on %s@." x; *)
-    if i = 2 then
-      g env const_env (Let(xt, Seti((M.find y env) lsr 1), e))
-    else if i = 4 then
-      g env const_env (Let(xt, Seti((M.find y env) lsr 2), e))
-    else
-      raise (Failure "unhandled div.")
+    (match i with
+     | 2 -> g env const_env (Let(xt, Seti((M.find y env) lsr 1), e))
+     | 4 -> g env const_env (Let(xt, Seti((M.find y env) lsr 2), e))
+     | _ -> raise (Failure "unhandled div."))
+  | Let(xt, IfEq(y, C(i), e1, e2), e) when M.mem y env ->
+    let e' = if M.find y env = i then e1 else e2 in
+    g env const_env (flatten_let xt e e')
+  | Let(xt, IfLE(y, C(i), e1, e2), e) when M.mem y env ->
+    let e' = if M.find y env <= i then e1 else e2 in
+    g env const_env (flatten_let xt e e')
+  | Let(xt, IfGE(y, C(i), e1, e2), e) when M.mem y env ->
+    let e' = if M.find y env >= i then e1 else e2 in
+    g env const_env (flatten_let xt e e')
   | Let(xt, exp, e) -> Let(xt, g' env const_env exp, g env const_env e)
 and g' env const_env = function
+  | Neg(x) when M.mem x env ->
+    let xi = M.find x env in
+    if xi >= (2 lsl 12) then
+      Neg(x)
+    else
+      Seti(-xi)
   | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
-  | Add(x, V(y)) when M.mem y const_env -> Add(x, V(M.find y const_env))
+  | Add(x, V(y)) when M.mem y const_env ->
+    if M.find y const_env = reg_zero then
+      Mov(x)
+    else
+      raise (Failure "invalid constant register.")
   | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))
-  | Add(x, V(y)) when M.mem x const_env -> Add(y, V(M.find x const_env))
-  | Sub(x, y) when M.mem x const_env -> Sub(M.find x const_env, y)
-  | Sub(x, y) when M.mem y const_env -> Sub(x, M.find y const_env)
+  | Add(x, V(y)) when M.mem x const_env ->
+    if M.find x const_env = reg_zero then
+      Mov(y)
+    else
+      raise (Failure "invalid constant register.")
+  | Add(x, C(i)) when M.mem x env -> Seti((M.find x env) + i)
+  | Sub(x, y) when M.mem x const_env ->
+    if M.find x const_env = reg_zero then
+      Neg(y)
+    else
+      raise (Failure "invalid constant register.")
+  | Sub(x, y) when M.mem y const_env ->
+    if M.find y const_env = reg_zero then
+      Mov(x)
+    else
+      raise (Failure "invalid constant register.")
+  | Mul(x, i) when M.mem x env -> Seti((M.find x env) * i)
+  | Div(x, i) when M.mem x env -> Seti((M.find x env) / i)
   | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env))
   | Ld(x, V(y)) when M.mem y const_env ->
     if M.find y const_env = reg_zero then
@@ -83,7 +124,12 @@ and g' env const_env = function
   | e -> e
 
 let h { name = l; args = xs; fargs = ys; body = e; ret = t } =
-  { name = l; args = xs; fargs = ys; body = g M.empty M.empty e; ret = t }
+  let rec h' n e =
+    if n = 0 then e
+    else
+      let nxt = g M.empty M.empty e in
+      if e = nxt then e else h' (n-1) nxt in
+  { name = l; args = xs; fargs = ys; body = h' 1000 e; ret = t }
 
 let f (Prog(float_data, array_data, fundefs, e)) =
   Prog(float_data, array_data, List.map h fundefs, g M.empty M.empty e)
