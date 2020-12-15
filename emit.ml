@@ -44,6 +44,9 @@ let f oc { data = data; fundefs = fundefs; prog = prog } =
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "\t.globl\tmin_caml_start\n";
   Printf.fprintf oc "min_caml_start:\n";
+  if !is_core then
+    (Printf.fprintf oc "\tli\t%s, 170\n" reg_buf;
+     Printf.fprintf oc "\ttxbu\t%s\n" reg_buf);
   Printf.fprintf oc "\taddi\tsp, sp, -52\n";
   Printf.fprintf oc "\taddi\t%s, sp, 56\n" reg_sp;
   Printf.fprintf oc "\taddi\t%s, sp, 60\n" regs.(0);

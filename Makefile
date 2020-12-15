@@ -46,6 +46,9 @@ test/%.cmp: test/%.res test/%.ans
 raytrace: $(RESULT)
 	./$(RESULT) raytracer/minrt
 
+raytrace_core: $(RESULT)
+	./$(RESULT) -core raytracer/minrt
+
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 		alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
