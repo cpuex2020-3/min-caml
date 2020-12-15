@@ -1,6 +1,6 @@
 open KNormal
 
-let threshold = ref 40
+let threshold = ref 70
 
 let rec size = function
   | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2)
