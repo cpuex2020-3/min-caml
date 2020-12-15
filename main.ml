@@ -57,11 +57,14 @@ let file f =
     close_out outchan;
   with e -> (close_in inchan; close_out outchan; raise e)
 
+let is_core = ref false
+
 let () =
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
-     ("-globals", Arg.String(fun s -> globals_path := s), "path to the global file.") ]
+     ("-globals", Arg.String(fun s -> globals_path := s), "path to the global file.");
+     ("-core", Arg.String(fun _ -> Asm.is_core := true), "for core or not.")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] [-globlas s] ...filenames without \".ml\"..." Sys.argv.(0));
