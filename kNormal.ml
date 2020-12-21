@@ -28,11 +28,12 @@ type t =
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
+  | Itof of Id.t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
-  | Neg(x) | FNeg(x) -> S.singleton x
+  | Neg(x) | FNeg(x) | Itof(x) -> S.singleton x
   | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
@@ -220,6 +221,12 @@ let rec g env = function
                 | Type.Float -> "create_float_array"
                 | _ -> "create_array" in
               ExtFunApp(l, [x; y]), Type.Array(t2)))
+  | Syntax.Itof(e) ->
+    (match g env e with
+     | _, Type.Int as g_e ->
+       insert_let g_e
+         (fun x -> Itof(x), Type.Float)
+     | _ -> assert false)
   | Syntax.Get(e1, e2) ->
     (match g env e1 with
      | _, Type.Array(t) as g_e1 ->
@@ -327,3 +334,4 @@ let rec print t depth =
     (Printf.printf "EXTFUNAPP %s [" id;
      List.iter (fun id -> Printf.printf "%s " id) li;
      Printf.printf "]\n")
+  | Itof (e) -> (Printf.printf "ITOF %s\n" e)

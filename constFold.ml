@@ -45,6 +45,7 @@ let rec g env = function
       xts
       (findt y env)
   | LetTuple(xts, y, e) -> LetTuple(xts, y, g env e)
+  | Itof(x) when memi x env -> Float(float_of_int(findi x env))
   | e -> e
 
 let f = g M.empty

@@ -217,6 +217,7 @@ let rec g env = function
     else
       raise (Failure (Printf.sprintf "variable %s is not found anywhere in Put." x))
   | Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
+  | Closure.Itof(x) -> Ans(Itof(x))
 
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =
   let (int, float) = separate yts in

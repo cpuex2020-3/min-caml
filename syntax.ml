@@ -25,6 +25,7 @@ type t =
   | Tuple of t list
   | LetTuple of (Id.t * Type.t) list * t * t
   | Array of t * t
+  | Itof of t
   | Get of t * t
   | Put of t * t * t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
@@ -178,6 +179,10 @@ let rec print t depth =
      print t1 (depth + 1);
      Printf.printf ",\n";
      print t2 (depth + 1);
+     Printf.printf ")\n")
+  | Itof (t) ->
+    (Printf.printf "Itof(\n";
+     print t (depth + 1);
      Printf.printf ")\n")
   | Get (t1, t2) ->
     (Printf.printf "Get(\n";

@@ -133,6 +133,7 @@ and g' dest cont regenv = function
   | Div(x, i) -> (Ans(Div(find x Type.Int regenv, i)), regenv)
   | Ld(x, y') -> (Ans(Ld(find x Type.Int regenv, find' y' regenv)), regenv)
   | St(x, y, z') -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv)), regenv)
+  | Itof(x) -> (Ans(Itof(find x Type.Int regenv)), regenv)
   | FMov(x) -> (Ans(FMov(find x Type.Float regenv)), regenv)
   | FNeg(x) -> (Ans(FNeg(find x Type.Float regenv)), regenv)
   | FAdd(x, y) -> (Ans(FAdd(find x Type.Float regenv, find y Type.Float regenv)), regenv)

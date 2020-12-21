@@ -26,6 +26,7 @@ type t =
   | Get of Id.t * Id.t
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.l
+  | Itof of Id.t
 type fundef = { name : Id.l * Type.t;
                 args : (Id.t * Type.t) list;
                 formal_fv : (Id.t * Type.t) list;
@@ -36,7 +37,7 @@ let rec filter_globals xs = List.filter (fun x -> not (M.mem x !Typing.globenv))
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
-  | Neg(x) | FNeg(x) -> S.singleton x
+  | Neg(x) | FNeg(x) | Itof(x) -> S.singleton x
   | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) ->
     S.of_list (filter_globals [x; y])
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
@@ -116,6 +117,7 @@ let rec g env known = function
   | KNormal.Put(x, y, z) -> Put(x, y, z)
   | KNormal.ExtArray(x) -> ExtArray(Id.L(x))
   | KNormal.ExtFunApp(x, ys) -> AppDir(Id.L("min_caml_" ^ x), ys)
+  | KNormal.Itof(x) -> Itof(x)
 
 let f e =
   toplevel := [];
@@ -188,6 +190,7 @@ let rec print_t t depth =
   | Get (t1, t2) -> Printf.printf "GET %s %s\n" t1 t2
   | Put (t1, t2, t3) -> Printf.printf "PUT %s %s %s\n" t1 t2 t3
   | ExtArray (t) -> let Id.L(s) = t in Printf.printf "EXTARRAY %s\n" s
+  | Itof(e) -> Printf.printf "ITOF %s\n" e
   | MakeCls((id, ty), cl, z) -> Printf.printf "MAKECLS %s\n" id
   | AppCls(id, args) ->
     Printf.printf "APPCLS %s\n" id;

@@ -90,6 +90,7 @@ and g' = function
   | NonTail(x), Ld(y, V(z)) -> [Add(reg_buf, y, z); Lw(x, 0, reg_buf)]
   | NonTail(_), St(x, y, C(i)) -> [Sw(x, i, y)]
   | NonTail(_), St(x, y, V(z)) -> [Add(reg_buf, y, z); Sw(x, 0, reg_buf)]
+  | NonTail(x), Itof(y) -> [Fcvt(x, y)]
   | NonTail(x), FMov(y) -> if x <> y then (assert (List.mem x allfregs); [Fsgnj(x, y, y)]) else []
   | NonTail(x), FNeg(y) -> [Fsgnjn(x, y, y)]
   | NonTail(x), FAdd(y, z) -> [Fadd(x, y, z)]
@@ -119,7 +120,7 @@ and g' = function
     g' (NonTail(Id.gentmp Type.Unit), exp) @ [Ret]
   | Tail, (Seti _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' (NonTail(regs.(0)), exp) @ [Ret]
-  | Tail, (SetFi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _  as exp) ->
+  | Tail, (SetFi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _ | Itof _ as exp) ->
     g' (NonTail(fregs.(0)), exp) @ [Ret]
   | Tail, (Restore(x) as exp) ->
     (match locate x with

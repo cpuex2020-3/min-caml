@@ -15,6 +15,7 @@ and exp =
   | Div of Id.t * int
   | Ld of Id.t * id_or_imm
   | St of Id.t * Id.t * id_or_imm
+  | Itof of Id.t
   | FMov of Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
