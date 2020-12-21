@@ -1,8 +1,6 @@
 open Asm
 open Ir
 
-(* TODO: utilize reg_zero *)
-
 let replace_id_or_imm from_reg to_reg = function
   | V(x) when x = from_reg -> V(to_reg)
   | e -> e
@@ -62,9 +60,14 @@ and replace' from_reg to_reg = function
       St(x, to_reg, replace_id_or_imm from_reg to_reg z')
     else
       St(x, y, replace_id_or_imm from_reg to_reg z')
+  (* TODO: if reg_zero, return fzero *)
+  | Itof(x) as e -> if x = from_reg then Itof(to_reg) else e
   | FMov(x) as e -> if x = from_reg then FMov(to_reg) else e
   | FNeg(x) as e -> if x = from_reg then FNeg(to_reg) else e
   (* TODO: if fzero *)
+  | FSqr(x) as e -> if x = from_reg then FSqr(to_reg) else e
+  | Sqrt(x) as e -> if x = from_reg then Sqrt(to_reg) else e
+  | FAbs(x) as e -> if x = from_reg then FAbs(to_reg) else e
   | FAdd(x, y) as e ->
     if x = from_reg && y = from_reg then FAdd(to_reg, to_reg)
     else if x = from_reg then FAdd(to_reg, y)
@@ -176,6 +179,7 @@ let rec g env = function
   | Let((x, t), Mov(y), e) when List.mem y const_regs -> g env (replace x y e)
   | Let(xt, exp, e) -> Let(xt, g' env exp, g env e)
 and g' env = function
+  (* TODO: Itof *)
   | Seti(i) when i = 0 -> Mov(reg_zero)
   | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
   | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))

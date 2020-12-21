@@ -85,6 +85,9 @@ let rec g env = function
   | Closure.Mul(x, y) -> Ans(Mul(x, y))
   | Closure.Div(x, y) -> Ans(Div(x, y))
   | Closure.FNeg(x) -> Ans(FNeg(x))
+  | Closure.FSqr(x) -> Ans(FSqr(x))
+  | Closure.Sqrt(x) -> Ans(Sqrt(x))
+  | Closure.FAbs(x) -> Ans(FAbs(x))
   | Closure.FAdd(x, y) -> Ans(FAdd(x, y))
   | Closure.FSub(x, y) -> Ans(FSub(x, y))
   | Closure.FMul(x, y) -> Ans(FMul(x, y))
@@ -217,6 +220,7 @@ let rec g env = function
     else
       raise (Failure (Printf.sprintf "variable %s is not found anywhere in Put." x))
   | Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
+  | Closure.Itof(x) -> Ans(Itof(x))
 
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =
   let (int, float) = separate yts in

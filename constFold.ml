@@ -22,6 +22,9 @@ let rec g env = function
   | Add(x, y) when memi x env && memi y env -> Int(findi x env + findi y env)
   | Sub(x, y) when memi x env && memi y env -> Int(findi x env - findi y env)
   | FNeg(x) when memf x env -> Float(-.(findf x env))
+  | FSqr(x) when memf x env -> Float((findf x env) *. (findf x env))
+  | Sqrt(x) when memf x env -> Float(sqrt(findf x env))
+  | FAbs(x) when memf x env -> Float(Float.abs (findf x env))
   | FAdd(x, y) when memf x env && memf y env -> Float(findf x env +. findf y env)
   | FSub(x, y) when memf x env && memf y env -> Float(findf x env -. findf y env)
   | FMul(x, y) when memf x env && memf y env -> Float(findf x env *. findf y env)
@@ -45,6 +48,7 @@ let rec g env = function
       xts
       (findt y env)
   | LetTuple(xts, y, e) -> LetTuple(xts, y, g env e)
+  | Itof(x) when memi x env -> Float(float_of_int(findi x env))
   | e -> e
 
 let f = g M.empty

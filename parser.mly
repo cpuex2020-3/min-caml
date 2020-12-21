@@ -30,6 +30,12 @@ let addtyp x = (x, Type.gentyp ())
 %token REC
 %token COMMA
 %token ARRAY_CREATE
+%token ITOF
+%token FSQR
+%token SQRT
+%token FABS
+%token FLESS
+%token FNEG
 %token DOT
 %token LESS_MINUS
 %token SEMICOLON
@@ -151,6 +157,24 @@ exp:
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { Array($2, $3) }
+| ITOF simple_exp
+    %prec prec_app
+    { Itof($2) }
+| FSQR simple_exp
+    %prec prec_app
+    { FSqr($2) }
+| SQRT simple_exp
+    %prec prec_app
+    { Sqrt($2) }
+| FABS simple_exp
+    %prec prec_app
+    { FAbs($2) }
+| FLESS simple_exp simple_exp
+    %prec prec_app
+    { FLess($2, $3) }
+| FNEG simple_exp
+    %prec prec_app
+    { FNeg($2) }
 | error {
     failwith
         (

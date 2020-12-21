@@ -19,6 +19,9 @@ type t =
   | Fsw of Id.t * int * Id.t
   | Fsgnj of Id.t * Id.t * Id.t
   | Fsgnjn of Id.t * Id.t * Id.t
+  | Fsgnjx of Id.t * Id.t * Id.t
+  | Fsqrt of Id.t * Id.t
+  | Fcvt of Id.t * Id.t
   | Ret
   | Jalr of Id.t * Id.t * int
   | J of Id.l

@@ -20,6 +20,9 @@ let emit oc = function
   | Fsw(x, i, y) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x i y
   | Fsgnj(x, y, z) -> Printf.fprintf oc "\tfsgnj.s\t%s, %s, %s\n" x y z
   | Fsgnjn(x, y, z) -> Printf.fprintf oc "\tfsgnjn.s\t%s, %s, %s\n" x y z
+  | Fsgnjx(x, y, z) -> Printf.fprintf oc "\tfsgnjx.s\t%s, %s, %s\n" x y z
+  | Fsqrt(x, y) -> Printf.fprintf oc "\tfsqrt.s\t%s, %s\n" x y
+  | Fcvt(x, y) -> Printf.fprintf oc "\tfcvt.s.w\t%s, %s\n" x y
   | Ret -> Printf.fprintf oc "\tret\n"
   | Jalr(_) -> raise (Failure "why closure?")
   | J(Id.L(l)) -> Printf.fprintf oc "\tj\t%s\n" l

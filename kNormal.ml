@@ -11,6 +11,9 @@ type t =
   | Mul of Id.t * int
   | Div of Id.t * int
   | FNeg of Id.t
+  | FSqr of Id.t
+  | Sqrt of Id.t
+  | FAbs of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
@@ -28,11 +31,12 @@ type t =
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
+  | Itof of Id.t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
-  | Neg(x) | FNeg(x) -> S.singleton x
+  | Neg(x) | FNeg(x) | Itof(x) | FSqr(x) | Sqrt(x) | FAbs(x) -> S.singleton x
   | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
@@ -119,6 +123,15 @@ let rec g env = function
   | Syntax.FNeg(e) ->
     insert_let (g env e)
       (fun x -> FNeg(x), Type.Float)
+  | Syntax.FSqr(e) ->
+    insert_let (g env e)
+      (fun x -> FSqr(x), Type.Float)
+  | Syntax.Sqrt(e) ->
+    insert_let (g env e)
+      (fun x -> Sqrt(x), Type.Float)
+  | Syntax.FAbs(e) ->
+    insert_let (g env e)
+      (fun x -> FAbs(x), Type.Float)
   | Syntax.FAdd(e1, e2) ->
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
@@ -135,7 +148,7 @@ let rec g env = function
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
           (fun y -> FDiv(x, y), Type.Float))
-  | Syntax.Eq _ | Syntax.LE _ as cmp ->
+  | Syntax.Eq _ | Syntax.LE _ | Syntax.FLess _ as cmp ->
     g env (Syntax.If(cmp, Syntax.Bool(true), Syntax.Bool(false)))
   | Syntax.If(Syntax.Not(e1), e2, e3) -> g env (Syntax.If(e1, e3, e2))
   | Syntax.If(Syntax.Eq(e1, e2), e3, e4) ->
@@ -152,6 +165,13 @@ let rec g env = function
              let e3', t3 = g env e3 in
              let e4', t4 = g env e4 in
              IfLE(x, y, e3', e4'), t3))
+  | Syntax.If(Syntax.FLess(e1, e2), e3, e4) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y ->
+             let e3', t3 = g env e3 in
+             let e4', t4 = g env e4 in
+             IfLE(y, x, e4', e3'), t3))
   | Syntax.If(e1, e2, e3) -> g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false)), e3, e2))
   | Syntax.Let((x, t), e1, e2) ->
     let (e1', t1) = g env e1 in
@@ -220,6 +240,12 @@ let rec g env = function
                 | Type.Float -> "create_float_array"
                 | _ -> "create_array" in
               ExtFunApp(l, [x; y]), Type.Array(t2)))
+  | Syntax.Itof(e) ->
+    (match g env e with
+     | _, Type.Int as g_e ->
+       insert_let g_e
+         (fun x -> Itof(x), Type.Float)
+     | _ -> assert false)
   | Syntax.Get(e1, e2) ->
     (match g env e1 with
      | _, Type.Array(t) as g_e1 ->
@@ -250,7 +276,10 @@ let rec print t depth =
   | Sub (lhs, rhs) -> Printf.printf "SUB %s %s\n" lhs rhs
   | Mul (lhs, rhs) -> Printf.printf "Mul %s %d\n" lhs rhs
   | Div (lhs, rhs) -> Printf.printf "Div %s %d\n" lhs rhs
-  | FNeg id -> Printf.printf "FNEG %s" id
+  | FNeg id -> Printf.printf "FNEG %s\n" id
+  | FSqr id -> Printf.printf "FSQR %s\n" id
+  | Sqrt id -> Printf.printf "SQRT %s\n" id
+  | FAbs id -> Printf.printf "FABS %s\n" id
   | FAdd (lhs, rhs) -> Printf.printf "FADD %s %s\n" lhs rhs
   | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
   | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
@@ -327,3 +356,4 @@ let rec print t depth =
     (Printf.printf "EXTFUNAPP %s [" id;
      List.iter (fun id -> Printf.printf "%s " id) li;
      Printf.printf "]\n")
+  | Itof (e) -> (Printf.printf "ITOF %s\n" e)

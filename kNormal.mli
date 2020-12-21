@@ -8,6 +8,9 @@ type t =
   | Mul of Id.t * int
   | Div of Id.t * int
   | FNeg of Id.t
+  | FSqr of Id.t
+  | Sqrt of Id.t
+  | FAbs of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
@@ -25,6 +28,7 @@ type t =
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
+  | Itof of Id.t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 val fv : t -> S.t

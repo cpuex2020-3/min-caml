@@ -16,8 +16,12 @@ and exp =
   (* TODO: handle with id instead of id_or_imm. handling in emit can cause error. e.g. register dependencies *)
   | Ld of Id.t * id_or_imm
   | St of Id.t * Id.t * id_or_imm
+  | Itof of Id.t
   | FMov of Id.t
   | FNeg of Id.t
+  | FSqr of Id.t
+  | Sqrt of Id.t
+  | FAbs of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
@@ -51,13 +55,11 @@ let rec remove_and_uniq xs = function
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Seti (_) | SetFi (_) | Restore(_) | SetL(_) -> []
-  (*| Comment(_) -> []*)
-  | Neg(x) | Mov(x) -> [x]
+  | Neg(x) | Mov(x) | Itof(x) | FSqr(x) | Sqrt(x) | FAbs(x) -> [x]
   | FMov(x) | FNeg(x) | Save(x, _) | Mul(x, _) | Div(x, _) -> [x]
   | Add(x, y') | Ld(x, y') | LdF(x, y') -> x :: fv_id_or_imm y'
-  | Sub(x, y) -> x :: [y]
   | St(x, y, z') | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
-  | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
+  | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) | IfGE(x, y', e1, e2) ->
     x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
   | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) ->

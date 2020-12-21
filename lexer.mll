@@ -74,10 +74,20 @@ rule token = parse
     { COMMA }
 | '_'
     { IDENT(Id.gentmp Type.Unit) }
-| "create_array" (* [XX] ad hoc *)
+| "Array.create" | "Array.make" | "create_array"
     { ARRAY_CREATE }
-| "Array.create" | "Array.make" (* [XX] ad hoc *)
-    { ARRAY_CREATE }
+| "float_of_int"
+    { ITOF }
+| "fsqr"
+    { FSQR }
+| "sqrt"
+    { SQRT }
+| "fabs"
+    { FABS }
+| "fless"
+    { FLESS }
+| "fneg"
+    { FNEG }
 | '.'
     { DOT }
 | "<-"

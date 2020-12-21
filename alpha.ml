@@ -14,6 +14,9 @@ let rec g env = function
   | Mul(x, i) -> Mul(find x env, i)
   | Div(x, i) -> Div(find x env, i)
   | FNeg(x) -> FNeg(find x env)
+  | FSqr(x) -> FSqr(find x env)
+  | Sqrt(x) -> Sqrt(find x env)
+  | FAbs(x) -> FAbs(find x env)
   | FAdd(x, y) -> FAdd(find x env, find y env)
   | FSub(x, y) -> FSub(find x env, find y env)
   | FMul(x, y) -> FMul(find x env, find y env)
@@ -45,5 +48,6 @@ let rec g env = function
   | Put(x, y, z) -> Put(find x env, find y env, find z env)
   | ExtArray(x) -> ExtArray(x)
   | ExtFunApp(x, ys) -> ExtFunApp(x, List.map (fun y -> find y env) ys)
+  | Itof(x) -> Itof(find x env)
 
 let f = g M.empty
