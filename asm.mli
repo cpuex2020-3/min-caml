@@ -49,6 +49,9 @@ val reg_fsw : Id.t
 val reg_sp : Id.t
 val reg_hp : Id.t
 val reg_zero : Id.t
+val reg_fzero : Id.t
 val is_reg : Id.t -> bool
 val is_core : bool ref
 val const_regs : Id.t list
+
+val data_top_default : int

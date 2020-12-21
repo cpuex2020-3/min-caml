@@ -32,7 +32,7 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t -> (offset + 4, addi x t offset acc))
 
 let globenv = ref M.empty
-let data_top = ref 100
+let data_top = ref data_top_default
 let label_to_address = ref M.empty
 
 let find_var x env =

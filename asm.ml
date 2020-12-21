@@ -38,7 +38,7 @@ type fundef = { label : Id.l; args : Id.t list; fargs : Id.t list; body : t list
 type prog = { data : t list; fundefs : fundef list; prog : t list }
 
 let regs = [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7"; "s1"; "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9"; "s10"; "s11"; "t3"; "t4"; "t5"; "t6" |]
-let fregs = [| "fa0"; "fa1"; "fa2"; "fa3"; "fa4"; "fa5"; "fa6"; "fa7"; "fs0"; "fs1"; "fs2"; "fs3"; "fs4"; "fs5"; "fs6"; "fs7"; "fs8"; "fs9"; "fs10"; "fs11"; "ft0"; "ft1"; "ft2"; "ft3"; "ft4"; "ft5"; "ft6"; "ft7"; "ft8"; "ft9"; "ft10"; "ft11" |]
+let fregs = [| "fa0"; "fa1"; "fa2"; "fa3"; "fa4"; "fa5"; "fa6"; "fa7"; "fs0"; "fs1"; "fs3"; "fs4"; "fs5"; "fs6"; "fs7"; "fs8"; "fs9"; "fs10"; "fs11"; "ft0"; "ft1"; "ft2"; "ft3"; "ft4"; "ft5"; "ft6"; "ft7"; "ft8"; "ft9"; "ft10"; "ft11" |]
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
 let reg_cl = regs.(Array.length regs - 1) (* closure address (caml2html: sparcasm_regcl) *)
@@ -49,6 +49,9 @@ let reg_sp = "s0" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
 let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dynamically.(See Notability for more info) *)
 let reg_zero = "zero"
+let reg_fzero = "fs2"
 let is_reg x = List.mem x allregs || List.mem x allfregs || List.mem x [reg_sp; reg_ra; reg_hp; reg_zero]
 let is_core = ref false
 let const_regs = [reg_zero]
+
+let data_top_default = 84

@@ -46,7 +46,7 @@ let rec shuffle sw xys =
 
 type dest = Tail | NonTail of Id.t
 
-let data_top = ref 100 (* .data starts from memory address 100. *)
+let data_top = ref data_top_default (* .data starts from memory address 100. *)
 let float_ids = ref []
 
 let rec get_float_index l =

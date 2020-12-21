@@ -12,7 +12,6 @@ type t =
   | FSqr of Id.t
   | Sqrt of Id.t
   | FAbs of Id.t
-  | FLess of Id.t * Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
