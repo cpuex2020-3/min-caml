@@ -48,3 +48,4 @@ let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dyn
 let reg_zero = "zero"
 let is_reg x = List.mem x allregs || List.mem x allfregs || List.mem x [reg_sp; reg_ra; reg_hp; reg_zero]
 let is_core = ref false
+let const_regs = [reg_zero]

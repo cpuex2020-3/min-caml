@@ -24,7 +24,7 @@ let locate x =
 let offset x =
   match locate x with
   | hd :: tl -> 4 * hd
-  | [] -> raise (Failure (Printf.sprintf "No such variable %s in stackset." x))
+  | [] -> raise (Failure (Printf.sprintf "No such variable %s in stackset. @gen.ml" x))
 let stacksize () = (List.length !stackmap * 4)
 
 let pp_id_or_imm = function

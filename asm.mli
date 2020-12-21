@@ -48,3 +48,4 @@ val reg_hp : Id.t
 val reg_zero : Id.t
 val is_reg : Id.t -> bool
 val is_core : bool ref
+val const_regs : Id.t list

@@ -18,10 +18,10 @@ and exp =
   | St of Id.t * Id.t * id_or_imm
   | FMov of Id.t
   | FNeg of Id.t
-  | FAdd of  Id.t * Id.t
-  | FSub of  Id.t * Id.t
-  | FMul of  Id.t * Id.t
-  | FDiv of  Id.t * Id.t
+  | FAdd of Id.t * Id.t
+  | FSub of Id.t * Id.t
+  | FMul of Id.t * Id.t
+  | FDiv of Id.t * Id.t
   | LdF of Id.t * id_or_imm
   | StF of Id.t * Id.t * id_or_imm
   | IfEq of Id.t * id_or_imm * t * t
