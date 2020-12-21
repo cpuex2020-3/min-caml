@@ -50,6 +50,10 @@ let rec deref_term = function
   | LetTuple(xts, e1, e2) -> LetTuple(List.map deref_id_typ xts, deref_term e1, deref_term e2)
   | Array(e1, e2) -> Array(deref_term e1, deref_term e2)
   | Itof(e) -> Itof(deref_term e)
+  | FSqr(e) -> FSqr(deref_term e)
+  | Sqrt(e) -> Sqrt(deref_term e)
+  | FAbs(e) -> FAbs(deref_term e)
+  | FLess(e1, e2) -> FLess(deref_term e1, deref_term e2)
   | Get(e1, e2) -> Get(deref_term e1, deref_term e2)
   | Put(e1, e2, e3) -> Put(deref_term e1, deref_term e2, deref_term e3)
   | e -> e
@@ -108,6 +112,19 @@ let rec g env e =
     | FNeg(e) ->
       unify Type.Float (g env e);
       Type.Float
+    | FSqr(e) ->
+      unify Type.Float (g env e);
+      Type.Float
+    | Sqrt(e) ->
+      unify Type.Float (g env e);
+      Type.Float
+    | FAbs(e) ->
+      unify Type.Float (g env e);
+      Type.Float
+    | FLess(e1, e2) ->
+      unify Type.Float (g env e1);
+      unify Type.Float (g env e2);
+      Type.Bool
     | FAdd(e1, e2) | FSub(e1, e2) | FMul(e1, e2) | FDiv(e1, e2) ->
       unify Type.Float (g env e1);
       unify Type.Float (g env e2);

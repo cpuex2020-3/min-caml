@@ -8,6 +8,9 @@ type t =
   | Mul of Id.t * int
   | Div of Id.t * int
   | FNeg of Id.t
+  | FSqr of Id.t
+  | Sqrt of Id.t
+  | FAbs of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t

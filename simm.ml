@@ -65,6 +65,9 @@ and replace' from_reg to_reg = function
   | FMov(x) as e -> if x = from_reg then FMov(to_reg) else e
   | FNeg(x) as e -> if x = from_reg then FNeg(to_reg) else e
   (* TODO: if fzero *)
+  | FSqr(x) as e -> if x = from_reg then FSqr(to_reg) else e
+  | Sqrt(x) as e -> if x = from_reg then Sqrt(to_reg) else e
+  | FAbs(x) as e -> if x = from_reg then FAbs(to_reg) else e
   | FAdd(x, y) as e ->
     if x = from_reg && y = from_reg then FAdd(to_reg, to_reg)
     else if x = from_reg then FAdd(to_reg, y)

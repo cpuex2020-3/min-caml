@@ -93,6 +93,9 @@ and g' = function
   | NonTail(x), Itof(y) -> [Fcvt(x, y)]
   | NonTail(x), FMov(y) -> if x <> y then (assert (List.mem x allfregs); [Fsgnj(x, y, y)]) else []
   | NonTail(x), FNeg(y) -> [Fsgnjn(x, y, y)]
+  | NonTail(x), FSqr(y) -> [Fmul(x, y, y)]
+  | NonTail(x), Sqrt(y) -> [Fsqrt(x, y)]
+  | NonTail(x), FAbs(y) -> [Fsgnjx(x, y, y)]
   | NonTail(x), FAdd(y, z) -> [Fadd(x, y, z)]
   | NonTail(x), FSub(y, z) -> [Fsub(x, y, z)]
   | NonTail(x), FMul(y, z) -> [Fmul(x, y, z)]
@@ -120,7 +123,7 @@ and g' = function
     g' (NonTail(Id.gentmp Type.Unit), exp) @ [Ret]
   | Tail, (Seti _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' (NonTail(regs.(0)), exp) @ [Ret]
-  | Tail, (SetFi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _ | Itof _ as exp) ->
+  | Tail, (SetFi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _ | Itof _ | FSqr _ | Sqrt _ | FAbs _ as exp) ->
     g' (NonTail(fregs.(0)), exp) @ [Ret]
   | Tail, (Restore(x) as exp) ->
     (match locate x with

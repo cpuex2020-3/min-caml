@@ -9,6 +9,10 @@ type t =
   | Mul of Id.t * int
   | Div of Id.t * int
   | FNeg of Id.t
+  | FSqr of Id.t
+  | Sqrt of Id.t
+  | FAbs of Id.t
+  | FLess of Id.t * Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
@@ -37,8 +41,8 @@ let rec filter_globals xs = List.filter (fun x -> not (M.mem x !Typing.globenv))
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
-  | Neg(x) | FNeg(x) | Itof(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) ->
+  | Neg(x) | FNeg(x) | Itof(x) | FSqr(x) | Sqrt(x) | FAbs(x) -> S.singleton x
+  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) | FLess(x, y) ->
     S.of_list (filter_globals [x; y])
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
@@ -71,6 +75,9 @@ let rec g env known = function
   | KNormal.Mul(x, i) -> Mul(x, i)
   | KNormal.Div(x, i) -> Div(x, i)
   | KNormal.FNeg(x) -> FNeg(x)
+  | KNormal.FSqr(x) -> FSqr(x)
+  | KNormal.Sqrt(x) -> Sqrt(x)
+  | KNormal.FAbs(x) -> FAbs(x)
   | KNormal.FAdd(x, y) -> FAdd(x, y)
   | KNormal.FSub(x, y) -> FSub(x, y)
   | KNormal.FMul(x, y) -> FMul(x, y)
@@ -139,7 +146,11 @@ let rec print_t t depth =
   | Sub (lhs, rhs) -> Printf.printf "SUB %s %s\n" lhs rhs
   | Mul (lhs, rhs) -> Printf.printf "MUL %s %d\n" lhs rhs
   | Div (lhs, rhs) -> Printf.printf "DIV %s %d\n" lhs rhs
-  | FNeg id -> Printf.printf "FNEG %s" id
+  | FNeg id -> Printf.printf "FNEG %s\n" id
+  | FSqr id -> Printf.printf "FSQR %s\n" id
+  | Sqrt id -> Printf.printf "SQRT %s\n" id
+  | FAbs id -> Printf.printf "FABS %s\n" id
+  | FLess (lhs, rhs) -> Printf.printf "FLESS %s %s\n" lhs rhs
   | FAdd (lhs, rhs) -> Printf.printf "FADD %s %s\n" lhs rhs
   | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
   | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs

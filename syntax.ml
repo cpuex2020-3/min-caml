@@ -26,6 +26,10 @@ type t =
   | LetTuple of (Id.t * Type.t) list * t * t
   | Array of t * t
   | Itof of t
+  | FSqr of t
+  | Sqrt of t
+  | FAbs of t
+  | FLess of t * t
   | Get of t * t
   | Put of t * t * t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
@@ -183,6 +187,24 @@ let rec print t depth =
   | Itof (t) ->
     (Printf.printf "Itof(\n";
      print t (depth + 1);
+     Printf.printf ")\n")
+  | FSqr (t) ->
+    (Printf.printf "FSqr(\n";
+     print t (depth + 1);
+     Printf.printf ")\n")
+  | Sqrt (t) ->
+    (Printf.printf "Sqrt(\n";
+     print t (depth + 1);
+     Printf.printf ")\n")
+  | FAbs (t) ->
+    (Printf.printf "FAbs(\n";
+     print t (depth + 1);
+     Printf.printf ")\n")
+  | FLess (t1, t2) ->
+    (Printf.printf "FLess(\n";
+     print t1 (depth + 1);
+     Printf.printf ",\n";
+     print t2 (depth + 1);
      Printf.printf ")\n")
   | Get (t1, t2) ->
     (Printf.printf "Get(\n";

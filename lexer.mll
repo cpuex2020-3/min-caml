@@ -78,6 +78,16 @@ rule token = parse
     { ARRAY_CREATE }
 | "float_of_int"
     { ITOF }
+| "fsqr"
+    { FSQR }
+| "sqrt"
+    { SQRT }
+| "fabs"
+    { FABS }
+| "fless"
+    { FLESS }
+| "fneg"
+    { FNEG }
 | '.'
     { DOT }
 | "<-"
