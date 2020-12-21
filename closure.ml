@@ -18,6 +18,8 @@ type t =
   | FDiv of Id.t * Id.t
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
+  | IfFIsZero of Id.t * t * t
+  | IfFIsPos of Id.t * t * t
   | Let of (Id.t * Type.t) * t * t
   | GlobalLet of (Id.t * Type.t) * ConstExp.t * t
   | Var of Id.t
@@ -45,6 +47,7 @@ let rec fv = function
     S.of_list (filter_globals [x; y])
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
+  | IfFIsZero(x, e1, e2) | IfFIsPos(x, e1, e2) -> S.add x (S.union (fv e1) (fv e2))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | GlobalLet((x, t), e1, e2) -> S.empty (* there should be no free variable in globals variables. *)
   | Var(x) ->
@@ -83,6 +86,8 @@ let rec g env known = function
   | KNormal.FDiv(x, y) -> FDiv(x, y)
   | KNormal.IfEq(x, y, e1, e2) -> IfEq(x, y, g env known e1, g env known e2)
   | KNormal.IfLE(x, y, e1, e2) -> IfLE(x, y, g env known e1, g env known e2)
+  | KNormal.IfFIsZero(x, e1, e2) -> IfFIsZero(x, g env known e1, g env known e2)
+  | KNormal.IfFIsPos(x, e1, e2) -> IfFIsPos(x, g env known e1, g env known e2)
   | KNormal.Let((x, t), e1, e2) -> Let((x, t), g env known e1, g (M.add x t env) known e2)
   | KNormal.GlobalLet((x, t), e1, e2) ->
     GlobalLet((x, t), e1, g (M.add x t env) known e2)
@@ -162,6 +167,22 @@ let rec print_t t depth =
     print_newline()
   | IfLE (lhs, rhs, thn, els) ->
     Printf.printf "IF %s <= %s\n" lhs rhs;
+    print_t thn (depth + 1);
+    print_newline();
+    print_n_tabs depth;
+    Printf.printf "ELSE\n";
+    print_t els (depth + 1);
+    print_newline()
+  | IfFIsZero (x, thn, els) ->
+    Printf.printf "IFFISZERO %s\n" x;
+    print_t thn (depth + 1);
+    print_newline();
+    print_n_tabs depth;
+    Printf.printf "ELSE\n";
+    print_t els (depth + 1);
+    print_newline()
+  | IfFIsPos (x, thn, els) ->
+    Printf.printf "IFFISPOS %s\n" x;
     print_t thn (depth + 1);
     print_newline();
     print_n_tabs depth;

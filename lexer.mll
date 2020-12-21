@@ -88,6 +88,12 @@ rule token = parse
     { FLESS }
 | "fneg"
     { FNEG }
+| "fiszero"
+    { FISZERO }
+| "fispos"
+    { FISPOS }
+| "fisneg"
+    { FISNEG }
 | '.'
     { DOT }
 | "<-"

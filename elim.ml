@@ -1,7 +1,8 @@
 open KNormal
 
 let rec effect = function
-  | Let(_, e1, e2) | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) -> effect e1 || effect e2
+  | Let(_, e1, e2) | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfFIsZero(_, e1, e2) | IfFIsPos(_, e1, e2) ->
+    effect e1 || effect e2
   | LetRec(_, e) | LetTuple(_, _, e) -> effect e
   | App _ | Put _ | ExtFunApp _ -> true
   | _ -> false
@@ -9,6 +10,8 @@ let rec effect = function
 let rec f = function
   | IfEq(x, y, e1, e2) -> IfEq(x, y, f e1, f e2)
   | IfLE(x, y, e1, e2) -> IfLE(x, y, f e1, f e2)
+  | IfFIsZero(x, e1, e2) -> IfFIsZero(x, f e1, f e2)
+  | IfFIsPos(x, e1, e2) -> IfFIsPos(x, f e1, f e2)
   | Let((x, t), e1, e2) ->
     let e1' = f e1 in
     let e2' = f e2 in

@@ -54,6 +54,9 @@ let rec deref_term = function
   | Sqrt(e) -> Sqrt(deref_term e)
   | FAbs(e) -> FAbs(deref_term e)
   | FLess(e1, e2) -> FLess(deref_term e1, deref_term e2)
+  | FIsZero(e) -> FIsZero(deref_term e)
+  | FIsPos(e) -> FIsPos(deref_term e)
+  | FIsNeg(e) -> FIsNeg(deref_term e)
   | Get(e1, e2) -> Get(deref_term e1, deref_term e2)
   | Put(e1, e2, e3) -> Put(deref_term e1, deref_term e2, deref_term e3)
   | e -> e
@@ -151,7 +154,6 @@ let rec g env e =
     | Var(x) ->
       Format.eprintf "free variable %s assumed as external@." x;
       let t = Type.gentyp () in
-      Printf.printf "adding %s\n" x;
       extenv := M.add x t !extenv;
       t
     | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
@@ -172,6 +174,15 @@ let rec g env e =
     | Itof(e) ->
       unify (g env e) Type.Int;
       Type.Float
+    | FIsZero(e) ->
+      unify (g env e) Type.Float;
+      Type.Bool
+    | FIsPos(e) ->
+      unify (g env e) Type.Float;
+      Type.Bool
+    | FIsNeg(e) ->
+      unify (g env e) Type.Float;
+      Type.Bool
     | Get(e1, e2) ->
       let t = Type.gentyp () in
       unify (Type.Array(t)) (g env e1);
