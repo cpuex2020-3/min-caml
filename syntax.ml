@@ -30,6 +30,9 @@ type t =
   | Sqrt of t
   | FAbs of t
   | FLess of t * t
+  | FIsZero of t
+  | FIsPos of t
+  | FIsNeg of t
   | Get of t * t
   | Put of t * t * t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
@@ -205,6 +208,18 @@ let rec print t depth =
      print t1 (depth + 1);
      Printf.printf ",\n";
      print t2 (depth + 1);
+     Printf.printf ")\n")
+  | FIsZero (t) ->
+    (Printf.printf "FIsZero(\n";
+     print t (depth + 1);
+     Printf.printf ")\n")
+  | FIsPos (t) ->
+    (Printf.printf "FIsPos(\n";
+     print t (depth + 1);
+     Printf.printf ")\n")
+  | FIsNeg (t) ->
+    (Printf.printf "FIsNeg(\n";
+     print t (depth + 1);
      Printf.printf ")\n")
   | Get (t1, t2) ->
     (Printf.printf "Get(\n";

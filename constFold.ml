@@ -35,6 +35,10 @@ let rec g env = function
   | IfLE(x, y, e1, e2) when memi x env && memi y env -> if findi x env <= findi y env then g env e1 else g env e2
   | IfLE(x, y, e1, e2) when memf x env && memf y env -> if findf x env <= findf y env then g env e1 else g env e2
   | IfLE(x, y, e1, e2) -> IfLE(x, y, g env e1, g env e2)
+  | IfFIsZero(x, e1, e2) when memf x env -> if (findf x env) = 0.0 then g env e1 else g env e2
+  | IfFIsZero(x, e1, e2) -> IfFIsZero(x, g env e1, g env e2)
+  | IfFIsPos(x, e1, e2) when memf x env -> if (findf x env) > 0.0 then g env e1 else g env e2
+  | IfFIsPos(x, e1, e2) -> IfFIsPos(x, g env e1, g env e2)
   | Let((x, t), e1, e2) ->
     let e1' = g env e1 in
     let e2' = g (M.add x e1' env) e2 in

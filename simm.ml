@@ -60,8 +60,10 @@ and replace' from_reg to_reg = function
       St(x, to_reg, replace_id_or_imm from_reg to_reg z')
     else
       St(x, y, replace_id_or_imm from_reg to_reg z')
-  (* TODO: if reg_zero, return fzero *)
-  | Itof(x) as e -> if x = from_reg then Itof(to_reg) else e
+  | Itof(x) as e ->
+    if x = from_reg then
+      if to_reg = reg_zero then Mov(reg_fzero) else Itof(to_reg)
+    else e
   | FMov(x) as e -> if x = from_reg then FMov(to_reg) else e
   | FNeg(x) as e -> if x = from_reg then FNeg(to_reg) else e
   (* TODO: if fzero *)
@@ -69,20 +71,29 @@ and replace' from_reg to_reg = function
   | Sqrt(x) as e -> if x = from_reg then Sqrt(to_reg) else e
   | FAbs(x) as e -> if x = from_reg then FAbs(to_reg) else e
   | FAdd(x, y) as e ->
-    if x = from_reg && y = from_reg then FAdd(to_reg, to_reg)
-    else if x = from_reg then FAdd(to_reg, y)
-    else if y = from_reg then FAdd(x, to_reg)
+    if x = from_reg && y = from_reg then
+      if to_reg = reg_fzero then FMov(reg_fzero) else FAdd(to_reg, to_reg)
+    else if x = from_reg then
+      if to_reg = reg_fzero then FMov(reg_fzero) else FAdd(to_reg, y)
+    else if y = from_reg then
+      if to_reg = reg_fzero then FMov(reg_fzero) else FAdd(x, to_reg)
     else e
   | FSub(x, y) as e ->
-    if x = from_reg && y = from_reg then FSub(to_reg, to_reg)
-    else if x = from_reg then FSub(to_reg, y)
-    else if y = from_reg then FSub(x, to_reg)
+    if x = from_reg && y = from_reg then
+      if to_reg = reg_fzero then FMov(reg_fzero) else FSub(to_reg, to_reg)
+    else if x = from_reg then
+      if to_reg = reg_fzero then FNeg(y) else FSub(to_reg, y)
+    else if y = from_reg then
+      if to_reg = reg_fzero then FMov(x) else FSub(x, to_reg)
     else e
   | FMul(x, y) as e ->
-    if x = from_reg && y = from_reg then FMul(to_reg, to_reg)
-    else if x = from_reg then FMul(to_reg, y)
-    else if y = from_reg then FMul(x, to_reg)
-    else e
+    if to_reg = reg_fzero && (x = from_reg || y = from_reg) then
+      FMov(reg_fzero)
+    else
+      (if x = from_reg && y = from_reg then FMul(to_reg, to_reg)
+       else if x = from_reg then FMul(to_reg, y)
+       else if y = from_reg then FMul(x, to_reg)
+       else e)
   | FDiv(x, y) as e ->
     if x = from_reg && y = from_reg then FDiv(to_reg, to_reg)
     else if x = from_reg then FDiv(to_reg, y)

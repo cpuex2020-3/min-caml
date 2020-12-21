@@ -70,15 +70,18 @@ let rec g env = function
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Seti(i))
   | Closure.Float(d) ->
-    let l =
-      try
-        let (l, _) = List.find (fun (_, d') -> d = d') !float_data in
-        l
-      with Not_found ->
-        let l = Id.L(Id.genid "l") in
-        float_data := (l, d) :: !float_data;
-        l in
-    Ans(SetFi(l))
+    if d = 0.0 then
+      Ans(FMov(reg_fzero))
+    else
+      let l =
+        try
+          let (l, _) = List.find (fun (_, d') -> d = d') !float_data in
+          l
+        with Not_found ->
+          let l = Id.L(Id.genid "l") in
+          float_data := (l, d) :: !float_data;
+          l in
+      Ans(SetFi(l))
   | Closure.Neg(x) -> Ans(Neg(x))
   | Closure.Add(x, y) -> Ans(Add(x, V(y)))
   | Closure.Sub(x, y) -> Ans(Sub(x, y))
@@ -102,6 +105,8 @@ let rec g env = function
      | Type.Bool | Type.Int -> Ans(IfLE(x, V(y), g env e1, g env e2))
      | Type.Float -> Ans(IfFLE(x, y, g env e1, g env e2))
      | _ -> failwith "inequality supported only for bool, int, and float")
+  | Closure.IfFIsZero(x, e1, e2) -> (Ans(IfFEq(x, reg_fzero, g env e1, g env e2)))
+  | Closure.IfFIsPos(x, e1, e2) -> (Ans(IfFLE(x, reg_fzero, g env e2, g env e1)))
   | Closure.Let((x, t1), e1, e2) ->
     let e1' = g env e1 in
     let e2' = g (M.add x t1 env) e2 in
