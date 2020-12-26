@@ -4,8 +4,8 @@ CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS=-warn-error -31
 MIN_CAML_DIR = /Users/joe/ut/3a/cpuex/min-caml
-SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/3rd
-SIM_EXEC = god_float
+SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/word_addressing
+SIM_EXEC = god_word
 
 default: debug-code top $(RESULT)
 $(RESULT): debug-code top
@@ -43,8 +43,11 @@ test/%.cmp: test/%.res test/%.ans
 	ghead -n -2 $< > tmp && mv tmp $<
 	diff -w -B $^ > $@
 
-raytrace: $(RESULT)
-	./$(RESULT) raytracer/minrt
+raytrace_byte: $(RESULT)
+	./$(RESULT) -addressing byte raytracer/minrt
+
+raytrace_word: $(RESULT)
+	./$(RESULT) -addressing word raytracer/minrt
 
 raytrace_core: $(RESULT)
 	./$(RESULT) -core raytracer/minrt

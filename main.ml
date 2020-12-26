@@ -57,14 +57,24 @@ let file f =
     close_out outchan;
   with e -> (close_in inchan; close_out outchan; raise e)
 
-let is_core = ref false
-
 let () =
   let files = ref [] in
+  (* TODO: fix this optioning *)
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-globals", Arg.String(fun s -> globals_path := s), "path to the global file.");
-     ("-core", Arg.Unit(fun _ -> Asm.is_core := true), "for core or not.")]
+     ("-core", Arg.Unit(fun _ -> Asm.is_core := true), "for core or not.");
+     ("-addressing", Arg.String(function
+          | "byte" ->
+            Asm.is_word_addressing := false;
+            Asm.inc := 4;
+            Asm.data_top_default := 21 * 4;
+          | "word" ->
+            Asm.is_word_addressing := true;
+            Asm.inc := 1;
+            Asm.data_top_default := 21;
+          | _ -> raise (Failure "Unsupported mode.")
+        ), "word addressing. default is byte addressing.")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] [-globlas s] ...filenames without \".ml\"..." Sys.argv.(0));

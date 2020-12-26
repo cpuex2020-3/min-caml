@@ -47,11 +47,13 @@ let reg_sw = regs.(Array.length regs - 2) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_sp = "s0" (* stack pointer *)
 let reg_ra = "ra" (* return address *)
-let reg_hp = "t0" (* TODO: consider changing this to `min_caml_hp` and store dynamically.(See Notability for more info) *)
+let reg_hp = "t0" (* heap pointer *)
 let reg_zero = "zero"
 let reg_fzero = "fs2"
 let is_reg x = List.mem x allregs || List.mem x allfregs || List.mem x [reg_sp; reg_ra; reg_hp; reg_zero; reg_fzero]
 let is_core = ref false
 let const_regs = [reg_zero; reg_fzero]
 
-let data_top_default = 84
+let is_word_addressing = ref false
+let data_top_default = ref 0
+let inc = ref 0

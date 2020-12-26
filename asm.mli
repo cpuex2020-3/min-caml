@@ -54,4 +54,6 @@ val is_reg : Id.t -> bool
 val is_core : bool ref
 val const_regs : Id.t list
 
-val data_top_default : int
+val is_word_addressing : bool ref
+val data_top_default : int ref
+val inc : int ref
