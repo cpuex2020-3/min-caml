@@ -43,8 +43,11 @@ test/%.cmp: test/%.res test/%.ans
 	ghead -n -2 $< > tmp && mv tmp $<
 	diff -w -B $^ > $@
 
-raytrace: $(RESULT)
-	./$(RESULT) raytracer/minrt
+raytrace_byte: $(RESULT)
+	./$(RESULT) -addressing byte raytracer/minrt
+
+raytrace_word: $(RESULT)
+	./$(RESULT) -addressing word raytracer/minrt
 
 raytrace_core: $(RESULT)
 	./$(RESULT) -core raytracer/minrt

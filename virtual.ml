@@ -28,11 +28,11 @@ let expand xts ini addf addi =
   classify
     xts
     ini
-    (fun (offset, acc) x -> (offset + 1, addf x offset acc))
-    (fun (offset, acc) x t -> (offset + 1, addi x t offset acc))
+    (fun (offset, acc) x -> (offset + !inc, addf x offset acc))
+    (fun (offset, acc) x t -> (offset + !inc, addi x t offset acc))
 
 let globenv = ref M.empty
-let data_top = ref data_top_default
+let data_top = ref !data_top_default
 let label_to_address = ref M.empty
 
 let find_var x env =
@@ -48,22 +48,22 @@ let rec cal_position = function
     (match init with
      | ConstInt(_) | ConstFloat(_) ->
        let ret = !data_top in
-       data_top := len + !data_top;
+       data_top := !inc * len + !data_top;
        ret
      | ConstBool(_) -> raise (Failure "Bool array??")
      | ConstTuple(_) | ConstArray(_) ->
        let _ = cal_position init in
        let ret = !data_top in
-       data_top := len + !data_top;
+       data_top := !inc * len + !data_top;
        ret)
-  | ConstInt(i) -> data_top := !data_top + 1; -1
-  | ConstBool(b) -> data_top := !data_top + 1; -1
-  | ConstFloat(f) -> data_top := !data_top + 1; -1
+  | ConstInt(i) -> data_top := !data_top + !inc; -1
+  | ConstBool(b) -> data_top := !data_top + !inc; -1
+  | ConstFloat(f) -> data_top := !data_top + !inc; -1
   | ConstTuple(cs) ->
     let arrays = List.filter (function ConstArray(_) | ConstTuple(_) -> true | _ -> false) cs in
     List.iter (fun arr -> let _ = cal_position arr in ()) arrays;
     let ret = !data_top in
-    data_top := !data_top + List.length cs;
+    data_top := !data_top + List.length cs * !inc;
     ret
 
 let rec g env = function
@@ -126,7 +126,7 @@ let rec g env = function
     let (offset, store_fv) =
       expand
         (List.map (fun y -> (y, find_var y env)) ys)
-        (1, e2')
+        (!inc, e2')
         (fun y offset store_fv -> seq(StF(y, x, C(offset)), store_fv))
         (fun y _ offset store_fv -> seq(St(y, x, C(offset)), store_fv)) in
     Let((x, t), Mov(reg_hp),
@@ -167,42 +167,81 @@ let rec g env = function
     load
   | Closure.Get(x, y) ->
     if M.mem x env then
+      let offset = Id.genid "o" in
       match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop)
-      | Type.Array(Type.Float) -> Ans(LdF(x, V(y)))
-      | Type.Array(_) -> Ans(Ld(x, V(y)))
+      | Type.Array(Type.Float) ->
+        if !is_word_addressing then
+          Ans(LdF(x, V(y)))
+        else
+          Let((offset, Type.Int), Mul(y, !inc),
+              Ans(LdF(x, V(offset))))
+      | Type.Array(_) ->
+        if !is_word_addressing then
+          Ans(Ld(x, V(y)))
+        else
+          Let((offset, Type.Int), Mul(y, !inc),
+              Ans(Ld(x, V(offset))))
       | _ -> assert false
     else if M.mem x !globenv then
       let addr = Id.genid "l" in
+      let offset = Id.genid "o" in
       match M.find x !globenv with
       | Type.Array(Type.Unit) -> Ans(Nop)
       | Type.Array(Type.Float) ->
         Let((addr, Type.Int), Seti(M.find x !label_to_address),
-            Ans(LdF(addr, V(y))))
+            if !is_word_addressing then
+              Ans(LdF(addr, V(y)))
+            else
+              Let((offset, Type.Int), Mul(y, !inc),
+                  Ans(LdF(addr, V(offset)))))
       | Type.Array(_) ->
         Let((addr, Type.Int), Seti(M.find x !label_to_address),
-            Ans(Ld(addr, V(y))))
+            if !is_word_addressing then
+              Ans(Ld(addr, V(y)))
+            else
+              Let((offset, Type.Int), Mul(y, !inc),
+                  Ans(Ld(addr, V(offset)))))
       | _ -> raise (Failure "invalid type for global array.")
     else
       raise (Failure (Printf.sprintf "variable %s is not found anywhere in Get." x))
   | Closure.Put(x, y, z) ->
     if M.mem x env then
+      let offset = Id.genid "o" in
       match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop)
-      | Type.Array(Type.Float) -> Ans(StF(z, x, V(y)))
-      | Type.Array(_) -> Ans(St(z, x, V(y)))
+      | Type.Array(Type.Float) ->
+        if !is_word_addressing then
+          Ans(StF(z, x, V(y)))
+        else
+          Let((offset, Type.Int), Mul(y, !inc),
+              Ans(StF(z, x, V(offset))))
+      | Type.Array(_) ->
+        if !is_word_addressing then
+          Ans(St(z, x, V(y)))
+        else
+          Let((offset, Type.Int), Mul(y, !inc),
+              Ans(St(z, x, V(offset))))
       | _ -> assert false
     else if M.mem x !globenv then
+      let addr = Id.genid "l" in
+      let offset = Id.genid "o" in
       match M.find x !globenv with
       | Type.Array(Type.Unit) -> Ans(Nop)
       | Type.Array(Type.Float) ->
-        let addr = Id.genid "l" in
         Let((addr, Type.Int), Seti(M.find x !label_to_address),
-            Ans(StF(z, addr, V(y))))
+            if !is_word_addressing then
+              Ans(StF(z, addr, V(y)))
+            else
+              Let((offset, Type.Int), Mul(y, !inc),
+                  Ans(StF(z, addr, V(offset)))))
       | Type.Array(_) ->
-        let addr = Id.genid "l" in
         Let((addr, Type.Int), Seti(M.find x !label_to_address),
-            Ans(St(z, addr, V(y))))
+            if !is_word_addressing then
+              Ans(St(z, addr, V(y)))
+            else
+              Let((offset, Type.Int), Mul(y, !inc),
+                  Ans(St(z, addr, V(offset)))))
       | _ -> assert false
     else
       raise (Failure (Printf.sprintf "variable %s is not found anywhere in Put." x))
@@ -214,7 +253,7 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
   let (offset, load) =
     expand
       zts
-      (1, g (M.add x t (M.add_list yts (M.add_list zts M.empty))) e)
+      (!inc, g (M.add x t (M.add_list yts (M.add_list zts M.empty))) e)
       (fun z offset load -> fletd(z, LdF(x, C(offset)), load))
       (fun z t offset load -> Let((z, t), Ld(x, C(offset)), load)) in
   match t with
@@ -222,6 +261,7 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
   | _ -> assert false
 
 let f (Closure.Prog(fundefs, e)) =
+  data_top := !data_top_default;
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
   Prog(!float_data, List.rev !array_data, fundefs, e)
