@@ -12,9 +12,7 @@ let save x =
 let savef x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
-    (let pad =
-       if List.length !stackmap mod 2 = 0 then [] else [Id.gentmp Type.Int] in
-     stackmap := !stackmap @ pad @ [x; x])
+    stackmap := !stackmap @ [x; x]
 let locate x =
   let rec loc = function
     | [] -> []
@@ -23,9 +21,9 @@ let locate x =
   loc !stackmap
 let offset x =
   match locate x with
-  | hd :: tl -> 4 * hd
+  | hd :: tl -> hd
   | [] -> raise (Failure (Printf.sprintf "No such variable %s in stackset. @gen.ml" x))
-let stacksize () = (List.length !stackmap * 4)
+let stacksize () = (List.length !stackmap)
 
 let pp_id_or_imm = function
   | V(x) -> x
@@ -65,7 +63,7 @@ and g' = function
   | NonTail(_), Nop -> []
   | NonTail(x), Seti(i) -> [Li(x, i)]
   | NonTail(x), SetFi(Id.L(l)) ->
-    let offset = !data_top + 4 * (get_float_index l) in
+    let offset = !data_top + get_float_index l in
     if offset > 2047 then
       [Li(reg_buf, offset); Flw(x, 0, reg_buf)]
     else
@@ -176,8 +174,8 @@ and g' = function
   | NonTail(a), CallCls(x, ys, zs) ->
     let args = g'_args [(x, reg_cl)] ys zs in
     let ss = stacksize () in
-    let jalr = [Sw(reg_ra, ss, reg_sp); Lw(reg_buf, 0, reg_cl); Addi(reg_sp, reg_sp, ss + 4);
-                Jalr(reg_ra, reg_buf, 0); Addi(reg_sp, reg_sp, -(ss + 4)); Lw(reg_ra, ss, reg_sp)] in
+    let jalr = [Sw(reg_ra, ss, reg_sp); Lw(reg_buf, 0, reg_cl); Addi(reg_sp, reg_sp, ss + 1);
+                Jalr(reg_ra, reg_buf, 0); Addi(reg_sp, reg_sp, -(ss + 1)); Lw(reg_ra, ss, reg_sp)] in
     let epilog = if List.mem a allregs && a <> regs.(0) then
         [Mv(a, regs.(0))]
       else if List.mem a allfregs && a <> fregs.(0) then
@@ -189,9 +187,9 @@ and g' = function
     let args = g'_args [] ys zs in
     let ss = stacksize () in
     let jal = [Sw(reg_ra, ss, reg_sp);
-               Addi(reg_sp, reg_sp, ss + 4);
+               Addi(reg_sp, reg_sp, ss + 1);
                Jal(Id.L(x));
-               Addi(reg_sp, reg_sp, -(ss + 4));
+               Addi(reg_sp, reg_sp, -(ss + 1));
                Lw(reg_ra, ss, reg_sp)] in
     let epilog = if List.mem a allregs && a <> regs.(0) then
         [Mv(a, regs.(0))]
@@ -281,12 +279,12 @@ let rec gen_global x = function
        let ret = ref [] in
        for _ = 1 to len do
          ret := Word(int_to_hex head_addr) :: !ret;
-         data_top := !data_top + 4;
+         data_top := !data_top + 1;
        done;
        ini @ (lab :: !ret))
-  | ConstInt(i) -> data_top := !data_top + 4; [Word(int_to_hex i)]
-  | ConstBool(b) -> data_top := !data_top + 4; [Word(int_to_hex (if b then 1 else 0))]
-  | ConstFloat(f) -> data_top := !data_top + 4; [Word(float_to_hex f)]
+  | ConstInt(i) -> data_top := !data_top + 1; [Word(int_to_hex i)]
+  | ConstBool(b) -> data_top := !data_top + 1; [Word(int_to_hex (if b then 1 else 0))]
+  | ConstFloat(f) -> data_top := !data_top + 1; [Word(float_to_hex f)]
   | ConstTuple(cs) ->
     let arrays = List.filter (function ConstArray(_) | ConstTuple(_) -> true | _ -> false) cs in
     let head_addresses = ref [] in
@@ -305,12 +303,12 @@ let rec gen_global x = function
           | ConstArray(_) ->
             let ret = [Word(int_to_hex (List.nth !head_addresses !counter))] in
             counter := !counter + 1;
-            data_top := !data_top + 4;
+            data_top := !data_top + 1;
             ret
           | ConstTuple(_) ->
             let ret = [Word(int_to_hex (List.nth !head_addresses !counter))] in
             counter := !counter + 1;
-            data_top := !data_top + 4;
+            data_top := !data_top + 1;
             ret)
         cs in
     pre @ (lab :: body)

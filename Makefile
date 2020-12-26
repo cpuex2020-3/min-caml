@@ -4,8 +4,8 @@ CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS=-warn-error -31
 MIN_CAML_DIR = /Users/joe/ut/3a/cpuex/min-caml
-SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/3rd
-SIM_EXEC = god_float
+SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/word_addressing
+SIM_EXEC = god_word
 
 default: debug-code top $(RESULT)
 $(RESULT): debug-code top

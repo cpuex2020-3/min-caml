@@ -54,4 +54,4 @@ let is_reg x = List.mem x allregs || List.mem x allfregs || List.mem x [reg_sp; 
 let is_core = ref false
 let const_regs = [reg_zero; reg_fzero]
 
-let data_top_default = 84
+let data_top_default = 21
