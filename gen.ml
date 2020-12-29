@@ -98,6 +98,7 @@ and g' = function
   | NonTail(x), FSub(y, z) -> [Fsub(x, y, z)]
   | NonTail(x), FMul(y, z) -> [Fmul(x, y, z)]
   | NonTail(x), FDiv(y, z) -> [Fdiv(x, y, z)]
+  | NonTail(x), FSgnj(y, z) -> [Fsgnj(x, y, z)]
   | NonTail(x), LdF(y, V(z)) -> [Add(reg_buf, y, z); Flw(x, 0, reg_buf)]
   | NonTail(x), LdF(y, C(i)) -> [Flw(x, i, y)]
   | NonTail(_), StF(x, y, V(z)) -> [Add(reg_buf, y, z); Fsw(x, 0, reg_buf)]
@@ -121,7 +122,8 @@ and g' = function
     g' (NonTail(Id.gentmp Type.Unit), exp) @ [Ret]
   | Tail, (Seti _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ | Mul _ | Div _ as exp) ->
     g' (NonTail(regs.(0)), exp) @ [Ret]
-  | Tail, (SetFi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | LdF _ | Itof _ | FSqr _ | Sqrt _ | FAbs _ as exp) ->
+  | Tail, (SetFi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _
+          | LdF _ | Itof _ | FSqr _ | Sqrt _ | FAbs _ | FSgnj _ as exp) ->
     g' (NonTail(fregs.(0)), exp) @ [Ret]
   | Tail, (Restore(x) as exp) ->
     (match locate x with

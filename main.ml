@@ -1,5 +1,6 @@
 let frontend_limit = ref 1000
 let backend_limit = ref 100
+let out_file = ref None
 
 let rec iter_frontend n e =
   Format.eprintf "iteration %d@." n;
@@ -50,7 +51,11 @@ let gfile g =
 
 let file f =
   let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".s") in
+  let outfile = match !out_file with
+    | Some(f) -> f
+    | None -> f ^ ".s"
+  in
+  let outchan = open_out outfile in
   try
     lexbuf outchan (Lexing.from_channel inchan);
     close_in inchan;
@@ -74,7 +79,8 @@ let () =
             Asm.inc := 1;
             Asm.data_top_default := 21;
           | _ -> raise (Failure "Unsupported addressing mode.")
-        ), "word addressing. default is byte addressing.")]
+        ), "word addressing. default is byte addressing.");
+     ("-o", Arg.String(fun s -> out_file := Some(s)), "assembly file name.")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] [-globlas s] ...filenames without \".ml\"..." Sys.argv.(0));

@@ -23,6 +23,7 @@ let rec g env = function
   | IfLE(x, y, e1, e2) -> IfLE(find x env, find y env, g env e1, g env e2)
   | IfFIsZero(x, e1, e2) -> IfFIsZero(find x env, g env e1, g env e2)
   | IfFIsPos(x, e1, e2) -> IfFIsPos(find x env, g env e1, g env e2)
+  | FSgnj(x, y) -> FSgnj(find x env, find y env)
   | Let((x, t), e1, e2) ->
     (match g env e1 with
      | Var(y) ->

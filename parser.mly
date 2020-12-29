@@ -39,6 +39,7 @@ let addtyp x = (x, Type.gentyp ())
 %token FISZERO
 %token FISNEG
 %token FISPOS
+%token FSGNJ
 %token DOT
 %token LESS_MINUS
 %token SEMICOLON
@@ -187,6 +188,9 @@ exp:
 | FISNEG simple_exp
     %prec prec_app
     { FIsNeg($2) }
+| FSGNJ simple_exp simple_exp
+    %prec prec_app
+    { FSgnj($2, $3) }
 | error {
     failwith
         (

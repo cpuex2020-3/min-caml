@@ -19,6 +19,7 @@ type t =
   | IfLE of Id.t * Id.t * t * t
   | IfFIsZero of Id.t * t * t
   | IfFIsPos of Id.t * t * t
+  | FSgnj of Id.t * Id.t
   | Let of (Id.t * Type.t) * t * t
   | GlobalLet of (Id.t * Type.t) * ConstExp.t * t
   | Var of Id.t
