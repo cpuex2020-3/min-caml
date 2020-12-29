@@ -73,7 +73,7 @@ let () =
             Asm.is_word_addressing := true;
             Asm.inc := 1;
             Asm.data_top_default := 21;
-          | _ -> raise (Failure "Unsupported mode.")
+          | _ -> raise (Failure "Unsupported addressing mode.")
         ), "word addressing. default is byte addressing.")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^

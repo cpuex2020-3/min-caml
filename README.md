@@ -16,7 +16,7 @@ will compile `foo.ml` to `foo.s`. Note that there is no extension `.ml` in the c
 # How to run raytracer
 The following command executes the raytracer program.
 ```
-$ make raytrace
+$ make raytrace_word or make raytrace_byte depending on your addressing mode.
 $ cat raytracer/sld | SIMULATOR_EXEC raytracer/minrt.s > out.ppm # this sld file is generated via `python3 raytracer/cvt.py raytracer/contest.sld > raytracer/sld`
 ```
 Where SIMULATOR_EXEC is the path to your simulator executable.
