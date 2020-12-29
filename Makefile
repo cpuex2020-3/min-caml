@@ -6,6 +6,7 @@ OCAMLLDFLAGS=-warn-error -31
 MIN_CAML_DIR = /Users/joe/ut/3a/cpuex/min-caml
 SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/word_addressing
 SIM_EXEC = god_word
+RAYTRACER = raytracer/minrt
 
 default: debug-code top $(RESULT)
 $(RESULT): debug-code top
@@ -49,8 +50,11 @@ raytrace_byte: $(RESULT)
 raytrace_word: $(RESULT)
 	./$(RESULT) -addressing word raytracer/minrt
 
-raytrace_core: $(RESULT)
-	./$(RESULT) -core raytracer/minrt
+raytrace_core_byte: $(RESULT)
+	./$(RESULT) -addressing byte -core $(RAYTRACER)
+
+raytrace_core_word: $(RESULT)
+	./$(RESULT) -addressing word -core $(RAYTRACER)
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \

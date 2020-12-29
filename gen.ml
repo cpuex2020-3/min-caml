@@ -297,20 +297,21 @@ let rec gen_global x = function
     head_addresses := List.rev !head_addresses;
     let lab = Label(Id.L(x)) in
     let counter = ref 0 in
-    let body = List.concat_map
-        (function
-          | ConstInt(_) | ConstFloat(_) | ConstBool(_) as c -> gen_global x c
-          | ConstArray(_) ->
-            let ret = [Word(int_to_hex (List.nth !head_addresses !counter))] in
-            counter := !counter + 1;
-            data_top := !data_top + !inc;
-            ret
-          | ConstTuple(_) ->
-            let ret = [Word(int_to_hex (List.nth !head_addresses !counter))] in
-            counter := !counter + 1;
-            data_top := !data_top + !inc;
-            ret)
-        cs in
+    let body = List.concat
+        (List.map
+           (function
+             | ConstInt(_) | ConstFloat(_) | ConstBool(_) as c -> gen_global x c
+             | ConstArray(_) ->
+               let ret = [Word(int_to_hex (List.nth !head_addresses !counter))] in
+               counter := !counter + 1;
+               data_top := !data_top + !inc;
+               ret
+             | ConstTuple(_) ->
+               let ret = [Word(int_to_hex (List.nth !head_addresses !counter))] in
+               counter := !counter + 1;
+               data_top := !data_top + !inc;
+               ret)
+           cs) in
     pre @ (lab :: body)
 
 let gen_float id f = [Label(Id.L(Printf.sprintf "#%f\n%s" f id)); Word(float_to_hex f)]
@@ -322,8 +323,8 @@ let h { name = Id.L(x); args = args; fargs = fargs; body = e; ret = ret } =
 
 let f (Prog(float_data, array_data, fundefs, e)) =
   data_top := !data_top_default;
-  let array = List.concat_map (fun (id, const) -> gen_global id const) array_data in
-  let float = List.concat_map (fun (Id.L(id), f) -> gen_float id f) float_data in
+  let array = List.concat (List.map (fun (id, const) -> gen_global id const) array_data) in
+  let float = List.concat (List.map (fun (Id.L(id), f) -> gen_float id f) float_data) in
   float_ids := float_data;
   let fundefs = List.map (fun fundef -> h fundef) fundefs in
   stackset := S.empty;
