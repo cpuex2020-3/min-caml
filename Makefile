@@ -6,7 +6,7 @@ OCAMLLDFLAGS=-warn-error -31
 MIN_CAML_DIR = /Users/joe/ut/3a/cpuex/min-caml
 SIM_PATH = /Users/joe/ut/3a/cpuex/simulator/word_addressing
 SIM_EXEC = god_word
-RAYTRACER = raytracer/minrt
+RAYTRACER = raytracer/minrt.ml
 
 default: debug-code top $(RESULT)
 $(RESULT): debug-code top
@@ -45,16 +45,24 @@ test/%.cmp: test/%.res test/%.ans
 	diff -w -B $^ > $@
 
 raytrace_byte: $(RESULT)
-	./$(RESULT) -addressing byte raytracer/minrt
+	cp lib.ml tmp.ml
+	cat $(RAYTRACER) >> tmp.ml
+	./$(RESULT) -addressing byte -o raytracer/minrt.s tmp
 
 raytrace_word: $(RESULT)
-	./$(RESULT) -addressing word raytracer/minrt
+	cp lib.ml tmp.ml
+	cat $(RAYTRACER) >> tmp.ml
+	./$(RESULT) -addressing word -o raytracer/minrt.s tmp
 
 raytrace_core_byte: $(RESULT)
-	./$(RESULT) -addressing byte -core $(RAYTRACER)
+	cp lib.ml tmp.ml
+	cat $(RAYTRACER) >> tmp.ml
+	./$(RESULT) -addressing byte -o raytracer/minrt.s -core tmp
 
 raytrace_core_word: $(RESULT)
-	./$(RESULT) -addressing word -core $(RAYTRACER)
+	cp lib.ml tmp.ml
+	cat $(RAYTRACER) >> tmp.ml
+	./$(RESULT) -addressing word -o raytracer/minrt.s -core tmp
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \

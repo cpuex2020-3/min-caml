@@ -57,6 +57,7 @@ let rec deref_term = function
   | FIsZero(e) -> FIsZero(deref_term e)
   | FIsPos(e) -> FIsPos(deref_term e)
   | FIsNeg(e) -> FIsNeg(deref_term e)
+  | FSgnj(e1, e2) -> FSgnj(deref_term e1, deref_term e2)
   | Get(e1, e2) -> Get(deref_term e1, deref_term e2)
   | Put(e1, e2, e3) -> Put(deref_term e1, deref_term e2, deref_term e3)
   | e -> e
@@ -183,6 +184,10 @@ let rec g env e =
     | FIsNeg(e) ->
       unify (g env e) Type.Float;
       Type.Bool
+    | FSgnj(e1, e2) ->
+      unify (g env e1) Type.Float;
+      unify (g env e2) Type.Float;
+      Type.Float
     | Get(e1, e2) ->
       let t = Type.gentyp () in
       unify (Type.Array(t)) (g env e1);

@@ -22,6 +22,7 @@ type t =
   | IfLE of Id.t * Id.t * t * t
   | IfFIsZero of Id.t * t * t
   | IfFIsPos of Id.t * t * t
+  | FSgnj of Id.t * Id.t
   | Let of (Id.t * Type.t) * t * t
   | GlobalLet of (Id.t * Type.t) * ConstExp.t * t
   | Var of Id.t
@@ -39,7 +40,8 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) | Itof(x) | FSqr(x) | Sqrt(x) | FAbs(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) | FSgnj (x, y)
+    -> S.of_list [x; y]
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | IfFIsZero(x, e1, e2) | IfFIsPos(x, e1, e2) -> S.add x (S.union (fv e1) (fv e2))
@@ -194,6 +196,10 @@ let rec g env = function
          let e4', t4 = g env e4 in
          IfFIsPos(x, e4', e3'), t3)
   | Syntax.If(e1, e2, e3) -> g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false)), e3, e2))
+  | Syntax.FSgnj(e1, e2) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y -> FSgnj(x, y), Type.Float))
   | Syntax.Let((x, t), e1, e2) ->
     let (e1', t1) = g env e1 in
     let (e2', t2) = g (M.add x t env) e2 in
@@ -305,6 +311,7 @@ let rec print t depth =
   | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
   | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
   | FDiv (lhs, rhs) -> Printf.printf "FDIV %s %s\n" lhs rhs
+  | FSgnj (lhs, rhs) -> Printf.printf "FSGNJ %s %s\n" lhs rhs
   | IfEq (lhs, rhs, thn, els) ->
     (Printf.printf "IF %s = %s\n" lhs rhs;
      print thn (depth + 1);

@@ -26,6 +26,7 @@ and exp =
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | FSgnj of Id.t * Id.t
   | LdF of Id.t * id_or_imm
   | StF of Id.t * Id.t * id_or_imm
   | IfEq of Id.t * id_or_imm * t * t
@@ -59,7 +60,7 @@ let rec fv_exp = function
   | FMov(x) | FNeg(x) | Save(x, _) | Mul(x, _) | Div(x, _) -> [x]
   | Add(x, y') | Ld(x, y') | LdF(x, y') -> x :: fv_id_or_imm y'
   | St(x, y, z') | StF(x, y, z') -> x :: y :: fv_id_or_imm z'
-  | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]
+  | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | FSgnj(x, y) -> [x; y]
   | IfEq(x, y', e1, e2) | IfLE(x, y', e1, e2) | IfGE(x, y', e1, e2) ->
     x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
   | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) ->

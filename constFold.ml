@@ -29,6 +29,8 @@ let rec g env = function
   | FSub(x, y) when memf x env && memf y env -> Float(findf x env -. findf y env)
   | FMul(x, y) when memf x env && memf y env -> Float(findf x env *. findf y env)
   | FDiv(x, y) when memf x env && memf y env -> Float(findf x env /. findf y env)
+  | FSgnj(x, y) when memf x env && memf y env ->
+    Float(if findf y env >= 0. then Float.abs (findf x env) else -. (Float.abs (findf x env)))
   | IfEq(x, y, e1, e2) when memi x env && memi y env -> if findi x env = findi y env then g env e1 else g env e2
   | IfEq(x, y, e1, e2) when memf x env && memf y env -> if findf x env = findf y env then g env e1 else g env e2
   | IfEq(x, y, e1, e2) -> IfEq(x, y, g env e1, g env e2)

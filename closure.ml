@@ -20,6 +20,7 @@ type t =
   | IfLE of Id.t * Id.t * t * t
   | IfFIsZero of Id.t * t * t
   | IfFIsPos of Id.t * t * t
+  | FSgnj of Id.t * Id.t
   | Let of (Id.t * Type.t) * t * t
   | GlobalLet of (Id.t * Type.t) * ConstExp.t * t
   | Var of Id.t
@@ -43,7 +44,7 @@ let rec filter_globals xs = List.filter (fun x -> not (M.mem x !Typing.globenv))
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) | Itof(x) | FSqr(x) | Sqrt(x) | FAbs(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) ->
+  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) | FSgnj(x, y) ->
     S.of_list (filter_globals [x; y])
   | Mul(x, _) | Div(x, _) -> S.of_list [x]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
@@ -84,6 +85,7 @@ let rec g env known = function
   | KNormal.FSub(x, y) -> FSub(x, y)
   | KNormal.FMul(x, y) -> FMul(x, y)
   | KNormal.FDiv(x, y) -> FDiv(x, y)
+  | KNormal.FSgnj(x, y) -> FSgnj(x, y)
   | KNormal.IfEq(x, y, e1, e2) -> IfEq(x, y, g env known e1, g env known e2)
   | KNormal.IfLE(x, y, e1, e2) -> IfLE(x, y, g env known e1, g env known e2)
   | KNormal.IfFIsZero(x, e1, e2) -> IfFIsZero(x, g env known e1, g env known e2)
@@ -158,6 +160,7 @@ let rec print_t t depth =
   | FSub (lhs, rhs) -> Printf.printf "FSUB %s %s\n" lhs rhs
   | FMul (lhs, rhs) -> Printf.printf "FMUL %s %s\n" lhs rhs
   | FDiv (lhs, rhs) -> Printf.printf "FDIV %s %s\n" lhs rhs
+  | FSgnj (lhs, rhs) -> Printf.printf "FSGNJ %s %s\n" lhs rhs
   | IfEq (lhs, rhs, thn, els) ->
     Printf.printf "IF %s = %s\n" lhs rhs;
     print_t thn (depth + 1);

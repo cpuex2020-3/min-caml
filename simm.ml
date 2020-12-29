@@ -99,6 +99,11 @@ and replace' from_reg to_reg = function
     else if x = from_reg then FDiv(to_reg, y)
     else if y = from_reg then FDiv(x, to_reg)
     else e
+  | FSgnj(x, y) as e ->
+    if x = from_reg && y = from_reg then FSgnj(to_reg, to_reg)
+    else if x = from_reg then FSgnj(to_reg, y)
+    else if y = from_reg then FSgnj(x, to_reg)
+    else e
   | LdF(x, y') ->
     if x = from_reg then
       LdF(to_reg, replace_id_or_imm from_reg to_reg y')

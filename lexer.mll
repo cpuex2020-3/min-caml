@@ -94,6 +94,8 @@ rule token = parse
     { FISPOS }
 | "fisneg"
     { FISNEG }
+| "fsgnj"
+    { FSGNJ }
 | '.'
     { DOT }
 | "<-"
