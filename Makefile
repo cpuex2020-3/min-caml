@@ -16,8 +16,8 @@ SOURCES = float.c type.ml id.ml m.ml s.ml \
 syntax.ml parser.mly lexer.mll typing.mli typing.ml constExp.mli constExp.ml kNormal.mli kNormal.ml \
 alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
-closure.mli closure.ml ir.mli ir.ml asm.mli asm.ml virtual.mli virtual.ml \
-cse.mli cse.ml tupleFlatten.ml tupleFlatten.mli \
+closure.mli closure.ml asm.mli asm.ml ir.mli ir.ml virtual.mli virtual.ml \
+cse.mli cse.ml tupleFlatten.ml tupleFlatten.mli irElim.mli irElim.ml \
 simm.mli simm.ml regAlloc.mli regAlloc.ml gen.mli gen.ml peephole.mli peephole.ml emit.mli emit.ml \
 main.mli main.ml
 

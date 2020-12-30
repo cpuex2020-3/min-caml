@@ -47,3 +47,5 @@ val seq : exp * t -> t (* shorthand of Let for unit *)
 
 val fv : t -> Id.t list
 val concat : t -> Id.t * Type.t -> t -> t
+
+val replace : Id.t -> Id.t -> t -> t
