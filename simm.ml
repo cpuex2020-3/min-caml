@@ -29,12 +29,17 @@ let rec g env = function
   | Let((x, t), Mov(y), e) when List.mem y const_regs -> g env (replace x y e)
   | Let(xt, exp, e) -> Let(xt, g' env exp, g env e)
 and g' env = function
-  (* TODO: Itof *)
   | Seti(i) when i = 0 -> Mov(reg_zero)
   | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
   | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))
   | Add(x, V(y)) when y = reg_zero -> Nop
   | Add(x, C(i)) when i = 0 -> Nop
+  | Sub(x, y) when M.mem y env ->
+    let y' = M.find y env in
+    if -2047 < y' && y' < 2047 then
+      Add(x, C(-y'))
+    else
+      Sub(x, y)
   | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env))
   | St(x, y, V(z)) when M.mem z env -> St(x, y, C(M.find z env))
   | LdF(x, V(y)) when M.mem y env -> LdF(x, C(M.find y env))

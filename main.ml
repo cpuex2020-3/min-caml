@@ -38,8 +38,8 @@ let lexbuf outchan l =
     (iter_backend !backend_limit
        (Gen.f
           (RegAlloc.f
-             (Simm.f
-                (IrElim.f
+             (IrElim.f
+                (Simm.f
                    (Virtual.f flatten))))))
 
 let string s = lexbuf stdout (Lexing.from_string s)
