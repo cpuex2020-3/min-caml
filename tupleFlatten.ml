@@ -15,6 +15,7 @@ let rec convert_let_tuple li orig =
   | _ -> raise (Failure "length not matched")
 
 let rec g tuple_env = function
+  (* NEXT: fix this. just change let(a, b, c) = (1, 2, 3) to let a = 1 in let b = 2 in let c = 3 *)
   | Let((id, ty), t1, t2) ->
     (match t1 with
      | Tuple(ts) ->
@@ -29,11 +30,9 @@ let rec g tuple_env = function
      with Not_found -> LetTuple(li, id, g tuple_env t))
   | IfEq(id1, id2, t1, t2) -> IfEq(id1, id2, g tuple_env t1, g tuple_env t2)
   | IfLE(id1, id2, t1, t2) -> IfLE(id1, id2, g tuple_env t1, g tuple_env t2)
-  | MakeCls(id, cl, t) -> MakeCls(id, cl, g tuple_env t)
   | e -> e
 
 
-let f prog =
-  let Prog(fns, t) = prog in
+let f (Prog(fns, t)) =
   let new_fns = List.map (fun fn -> { name = fn.name; args = fn.args; formal_fv = fn.formal_fv; body = g [] fn.body }) fns in
   Prog(new_fns, g [] t)
