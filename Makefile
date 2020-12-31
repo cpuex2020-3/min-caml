@@ -47,7 +47,7 @@ test/%.cmp: test/%.res test/%.ans
 raytrace_byte: $(RESULT)
 	cp lib.ml tmp.ml
 	cat $(RAYTRACER) >> tmp.ml
-	./$(RESULT) -addressing byte -o raytracer/minrt.s tmp
+	./$(RESULT) -addressing byte -inline 60 -o raytracer/minrt.s tmp
 
 raytrace_word: $(RESULT)
 	cp lib.ml tmp.ml
@@ -57,7 +57,7 @@ raytrace_word: $(RESULT)
 raytrace_core_byte: $(RESULT)
 	cp lib.ml tmp.ml
 	cat $(RAYTRACER) >> tmp.ml
-	./$(RESULT) -addressing byte -o raytracer/minrt.s -core tmp
+	./$(RESULT) -addressing byte -inline 60 -o raytracer/minrt.s -core tmp
 
 raytrace_core_word: $(RESULT)
 	cp lib.ml tmp.ml

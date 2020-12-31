@@ -34,7 +34,7 @@ let rec replace = function
         (match List.hd rest with
          | Sw(sx, si, sy) ->
            if lx = sx && li = si && ly = sy then
-             replace (List.tl rest)
+             cur :: replace (List.tl rest)
            else
              default()
          | _ -> default())
@@ -42,7 +42,7 @@ let rec replace = function
         (match List.hd rest with
          | Fsw(sx, si, sy) ->
            if lx = sx && li = si && ly = sy then
-             replace (List.tl rest)
+             cur :: replace (List.tl rest)
            else
              default()
          | _ -> default())
@@ -50,7 +50,7 @@ let rec replace = function
         (match List.hd rest with
          | Lw(sx, si, sy) ->
            if lx = sx && li = si && ly = sy then
-             replace (List.tl rest)
+             cur :: replace (List.tl rest)
            else
              default()
          | _ -> default())
@@ -58,7 +58,7 @@ let rec replace = function
         (match List.hd rest with
          | Flw(sx, si, sy) ->
            if lx = sx && li = si && ly = sy then
-             replace (List.tl rest)
+             cur :: replace (List.tl rest)
            else
              default()
          | _ -> default())
