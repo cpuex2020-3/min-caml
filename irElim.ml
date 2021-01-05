@@ -1,14 +1,5 @@
 open Ir
 
-let rec effect = function
-  | Ans(exp) -> effect' exp
-  | Let(_, exp, e) -> effect' exp || effect e
-and effect' = function
-  | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
-    effect e1 || effect e2
-  | St _ | StF _ | CallCls _ | CallDir _ | Save _ -> true
-  | _ -> false
-
 let rec g = function
   | Ans(exp) -> Ans(exp)
   | Let((x, t), Mov(y), e) | Let((x, t), FMov(y), e) when not (Asm.is_reg y) ->

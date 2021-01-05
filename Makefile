@@ -18,7 +18,8 @@ alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 closure.mli closure.ml asm.mli asm.ml ir.mli ir.ml virtual.mli virtual.ml \
 cse.mli cse.ml tupleFlatten.ml tupleFlatten.mli irElim.mli irElim.ml \
-simm.mli simm.ml regAlloc.mli regAlloc.ml gen.mli gen.ml peephole.mli peephole.ml emit.mli emit.ml \
+simm.mli simm.ml irCse.mli irCse.ml \
+regAlloc.mli regAlloc.ml gen.mli gen.ml peephole.mli peephole.ml emit.mli emit.ml \
 main.mli main.ml
 
 TESTS = print sum-tail gcd sum fib ack even-odd \

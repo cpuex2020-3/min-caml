@@ -244,3 +244,12 @@ and replace' from_reg to_reg = function
     else
       e
   | Restore(x) as e -> if x = from_reg then Restore(to_reg) else e
+
+let rec effect = function
+  | Ans(exp) -> effect' exp
+  | Let(_, exp, e) -> effect' exp || effect e
+and effect' = function
+  | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
+    effect e1 || effect e2
+  | St _ | StF _ | CallCls _ | CallDir _ | Save _ -> true
+  | _ -> false
