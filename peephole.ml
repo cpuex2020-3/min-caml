@@ -65,8 +65,14 @@ let rec replace = function
       | e -> default()
     with _ -> default()
 
+let rec iter n e =
+  if n = 1000 then e
+  else
+    let e' = replace e in
+    if e = e' then e else iter (n+1) e'
+
 let h { label = l; args = xs; fargs = ys; body = e; ret = t } =
-  { label = l; args = xs; fargs = ys; body = replace e; ret = t }
+  { label = l; args = xs; fargs = ys; body = iter 0 e; ret = t }
 
 let f { data = data; fundefs = fundefs; prog = e } =
-  { data = data; fundefs = List.map h fundefs; prog = replace e }
+  { data = data; fundefs = List.map h fundefs; prog = iter 0 e }

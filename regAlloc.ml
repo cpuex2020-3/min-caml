@@ -48,7 +48,7 @@ let rec alloc dest cont regenv x t =
     | Type.Unit -> [] (* dummy *)
     | Type.Float -> allfregs
     | _ -> allregs in
-  if all = [] then Alloc("%unit") else (* [XX] ad hoc *)
+  if all = [] then Alloc("unit") else (* [XX] ad hoc *)
   if is_reg x then
     Alloc(x)
   else

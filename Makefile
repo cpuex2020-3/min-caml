@@ -25,8 +25,7 @@ main.mli main.ml
 TESTS = print sum-tail gcd sum fib ack even-odd \
 adder funcomp cls-rec cls-bug cls-bug2 cls-reg-bug \
 shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
-join-reg join-reg2 non-tail-if non-tail-if2 \
-inprod inprod-rec inprod-loop matmul matmul-flat \
+join-reg join-reg2 non-tail-if non-tail-if2 \ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
@@ -53,7 +52,7 @@ raytrace_byte: $(RESULT)
 raytrace_word: $(RESULT)
 	cp lib.ml tmp.ml
 	cat $(RAYTRACER) >> tmp.ml
-	./$(RESULT) -addressing word -o raytracer/minrt.s tmp
+	./$(RESULT) -addressing word -inline 140 -o raytracer/minrt.s tmp
 
 raytrace_core_byte: $(RESULT)
 	cp lib.ml tmp.ml
@@ -63,7 +62,7 @@ raytrace_core_byte: $(RESULT)
 raytrace_core_word: $(RESULT)
 	cp lib.ml tmp.ml
 	cat $(RAYTRACER) >> tmp.ml
-	./$(RESULT) -addressing word -o raytracer/minrt.s -core tmp
+	./$(RESULT) -addressing word -inline 140 -o raytracer/minrt.s -core tmp
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \

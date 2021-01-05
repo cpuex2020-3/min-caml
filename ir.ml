@@ -48,6 +48,42 @@ type prog = Prog of (Id.l * float) list * (Id.t * ConstExp.t) list * fundef list
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
+let str = function
+  | Nop -> "NOP"
+  | Seti _ -> "SETI"
+  | SetFi _ -> "SETFI"
+  | SetL _ -> "SETL"
+  | Mov _ -> "MOV"
+  | Neg _ -> "NEG"
+  | Add _ -> "ADD"
+  | Sub _ -> "SUB"
+  | Mul _ -> "MUL"
+  | Div _ -> "DIV"
+  | Ld _ -> "LD"
+  | St _ -> "ST"
+  | Itof _ -> "ITOF"
+  | FMov _ -> "FMOV"
+  | FNeg _ -> "FNeg"
+  | FSqr _ -> "FSqr"
+  | Sqrt _ -> "Sqrt"
+  | FAbs _ -> "FABS"
+  | FAdd _ -> "FADD"
+  | FSub _ -> "FSUB"
+  | FMul _ -> "FMUL"
+  | FDiv _ -> "FDIV"
+  | FSgnj _ -> "FSGNJ"
+  | LdF _ -> "LDF"
+  | StF _ -> "STF"
+  | IfEq _ -> "IFEQ"
+  | IfLE _ -> "IFLE"
+  | IfGE _ -> "IFGE"
+  | IfFEq _ -> "IFFEQ"
+  | IfFLE _ -> "IFFLE"
+  | CallCls _ -> "CALLCLS"
+  | CallDir _ -> "CALLDIR"
+  | Save _ -> "SAVE"
+  | Restore _ -> "RESTORE"
+
 (* super-tenuki *)
 let rec remove_and_uniq xs = function
   | [] -> []
@@ -244,12 +280,3 @@ and replace' from_reg to_reg = function
     else
       e
   | Restore(x) as e -> if x = from_reg then Restore(to_reg) else e
-
-let rec effect = function
-  | Ans(exp) -> effect' exp
-  | Let(_, exp, e) -> effect' exp || effect e
-and effect' = function
-  | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
-    effect e1 || effect e2
-  | St _ | StF _ | CallCls _ | CallDir _ | Save _ -> true
-  | _ -> false

@@ -43,12 +43,16 @@ and g' env = function
       Sub(x, y)
   | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env))
   | Ld(x, V(y)) when M.mem x env -> Ld(y, C(M.find x env))
+  | Ld(x, C(i)) when M.mem x env && M.find x env + i < 2048 -> Ld(reg_zero, C(M.find x env + i))
   | St(x, y, V(z)) when M.mem z env -> St(x, y, C(M.find z env))
   | St(x, y, V(z)) when M.mem y env -> St(x, z, C(M.find y env))
+  | St(x, y, C(i)) when M.mem y env && M.find y env + i < 2048 -> St(x, reg_zero, C(M.find y env + i))
   | LdF(x, V(y)) when M.mem y env -> LdF(x, C(M.find y env))
   | LdF(x, V(y)) when M.mem x env -> LdF(y, C(M.find x env))
+  | LdF(x, C(i)) when M.mem x env && M.find x env + i < 2048 -> LdF(reg_zero, C(M.find x env + i))
   | StF(x, y, V(z)) when M.mem z env -> StF(x, y, C(M.find z env))
   | StF(x, y, V(z)) when M.mem y env -> StF(x, z, C(M.find y env))
+  | StF(x, y, C(i)) when M.mem y env && M.find y env + i < 2048 -> StF(x, reg_zero, C(M.find y env + i))
   | IfEq(x, V(y), e1, e2) when M.mem y env -> IfEq(x, C(M.find y env), g env e1, g env e2)
   | IfLE(x, V(y), e1, e2) when M.mem y env -> IfLE(x, C(M.find y env), g env e1, g env e2)
   | IfGE(x, V(y), e1, e2) when M.mem y env -> IfGE(x, C(M.find y env), g env e1, g env e2)
@@ -63,14 +67,16 @@ and g' env = function
   | e -> e
 
 let rec iter n e =
-  Format.eprintf "iteration in simm.ml@%d\n" n;
-  if n = 0 then e
+  if n = 1000 then e
   else
     let e' = g M.empty e in
-    if e = e' then e else iter (n-1) e'
+    if e = e' then
+      (if n > 0 then Format.eprintf "iterated in simm.ml@%d\n" n;
+       e)
+    else iter (n+1) e'
 
 let h { name = l; args = xs; fargs = ys; body = e; ret = t } =
-  { name = l; args = xs; fargs = ys; body = iter 1000 e; ret = t }
+  { name = l; args = xs; fargs = ys; body = iter 0 e; ret = t }
 
 let f (Prog(float_data, array_data, fundefs, e)) =
-  Prog(float_data, array_data, List.map h fundefs, iter 1000 e)
+  Prog(float_data, array_data, List.map h fundefs, iter 0 e)

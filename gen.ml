@@ -85,8 +85,10 @@ and g' = function
     let o = if i = 2 then 1 else if i = 4 then 2 else raise (Failure "Unhandled divider") in
     [Srli(x, y, o)]
   | NonTail(x), Ld(y, C(i)) -> [Lw(x, i, y)]
+  | NonTail(x), Ld(y, V(z)) when z = reg_zero -> [Lw(x, 0, y)]
   | NonTail(x), Ld(y, V(z)) -> [Add(reg_buf, y, z); Lw(x, 0, reg_buf)]
   | NonTail(_), St(x, y, C(i)) -> [Sw(x, i, y)]
+  | NonTail(_), St(x, y, V(z)) when z = reg_zero -> [Sw(x, 0, y)]
   | NonTail(_), St(x, y, V(z)) -> [Add(reg_buf, y, z); Sw(x, 0, reg_buf)]
   | NonTail(x), Itof(y) -> [Fcvt(x, y)]
   | NonTail(x), FMov(y) -> if x <> y then (assert (List.mem x allfregs); [Fsgnj(x, y, y)]) else []
@@ -99,8 +101,10 @@ and g' = function
   | NonTail(x), FMul(y, z) -> [Fmul(x, y, z)]
   | NonTail(x), FDiv(y, z) -> [Fdiv(x, y, z)]
   | NonTail(x), FSgnj(y, z) -> [Fsgnj(x, y, z)]
+  | NonTail(x), LdF(y, V(z)) when z = reg_zero -> [Flw(x, 0, y)]
   | NonTail(x), LdF(y, V(z)) -> [Add(reg_buf, y, z); Flw(x, 0, reg_buf)]
   | NonTail(x), LdF(y, C(i)) -> [Flw(x, i, y)]
+  | NonTail(_), StF(x, y, V(z)) when z = reg_zero -> [Fsw(x, 0, y)]
   | NonTail(_), StF(x, y, V(z)) -> [Add(reg_buf, y, z); Fsw(x, 0, reg_buf)]
   | NonTail(_), StF(x, y, C(i)) -> [Fsw(x, i, y)]
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
