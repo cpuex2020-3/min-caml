@@ -18,14 +18,14 @@ alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 closure.mli closure.ml asm.mli asm.ml ir.mli ir.ml virtual.mli virtual.ml \
 cse.mli cse.ml tupleFlatten.ml tupleFlatten.mli irElim.mli irElim.ml \
-simm.mli simm.ml regAlloc.mli regAlloc.ml gen.mli gen.ml peephole.mli peephole.ml emit.mli emit.ml \
+simm.mli simm.ml irCse.mli irCse.ml \
+regAlloc.mli regAlloc.ml gen.mli gen.ml peephole.mli peephole.ml emit.mli emit.ml \
 main.mli main.ml
 
 TESTS = print sum-tail gcd sum fib ack even-odd \
 adder funcomp cls-rec cls-bug cls-bug2 cls-reg-bug \
 shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
-join-reg join-reg2 non-tail-if non-tail-if2 \
-inprod inprod-rec inprod-loop matmul matmul-flat \
+join-reg join-reg2 non-tail-if non-tail-if2 \ inprod inprod-rec inprod-loop matmul matmul-flat \
 manyargs \
 sub
 
@@ -52,7 +52,7 @@ raytrace_byte: $(RESULT)
 raytrace_word: $(RESULT)
 	cp lib.ml tmp.ml
 	cat $(RAYTRACER) >> tmp.ml
-	./$(RESULT) -addressing word -o raytracer/minrt.s tmp
+	./$(RESULT) -addressing word -inline 140 -o raytracer/minrt.s tmp
 
 raytrace_core_byte: $(RESULT)
 	cp lib.ml tmp.ml
@@ -62,7 +62,7 @@ raytrace_core_byte: $(RESULT)
 raytrace_core_word: $(RESULT)
 	cp lib.ml tmp.ml
 	cat $(RAYTRACER) >> tmp.ml
-	./$(RESULT) -addressing word -o raytracer/minrt.s -core tmp
+	./$(RESULT) -addressing word -inline 140 -o raytracer/minrt.s -core tmp
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \

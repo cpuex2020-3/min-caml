@@ -1,5 +1,4 @@
 let frontend_limit = ref 1000
-let backend_limit = ref 100
 let out_file = ref None
 
 let rec iter_frontend n e =
@@ -17,28 +16,23 @@ let rec iter_backend n e =
   Format.eprintf "iteration backend %d@." n;
   if n = 0 then e
   else
-    let e' = Peephole.f e in
+    let e' = IrCse.f (IrElim.f (Simm.f e)) in
     if e = e' then e else
       iter_backend (n - 1) e'
 
 let lexbuf outchan l =
   Id.counter := 0;
   let syntax = Parser.toplevel Lexer.token l in
-  (*print_string "** Output of Syntax.t **\n";*)
-  (*Syntax.print syntax 0;*)
   let kNormal = KNormal.f (Typing.f syntax) in
-  (*print_string "\n** Output of KNormal.t **\n";*)
-  (*KNormal.print kNormal 0;*)
   let closure = Closure.f (iter_frontend !frontend_limit (Alpha.f kNormal)) in
-  (*let flatten = TupleFlatten.f closure in*)
   let flatten = closure in
   (*print_string "\n** Output of Closure.t after tuple flattening **\n";*)
   (*Closure.print flatten;*)
   Emit.f outchan
-    (Gen.f
-       (RegAlloc.f
-          (IrElim.f
-             (Simm.f
+    (Peephole.f
+       (Gen.f
+          (RegAlloc.f
+             (iter_backend 1000
                 (Virtual.f flatten)))))
 
 let string s = lexbuf stdout (Lexing.from_string s)

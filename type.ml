@@ -19,7 +19,7 @@ let rec str = function
     "Fun(" ^
     (List.fold_left (fun cur_s arg -> cur_s ^ ", " ^ (str arg)) "" args) ^
     ") -> " ^ (str body)
-  | Tuple li -> "(" ^ (List.fold_left (fun cur_s arg -> cur_s ^ ", " ^ (str arg)) "" li) ^ ")"
+  | Tuple li -> "(" ^ (List.fold_left (fun cur_s arg -> cur_s ^ (str arg) ^ ", ") "" li) ^ ")"
   | Array arr -> Printf.sprintf "[%s]" (str arr)
   | Var v ->
     (match !v with
